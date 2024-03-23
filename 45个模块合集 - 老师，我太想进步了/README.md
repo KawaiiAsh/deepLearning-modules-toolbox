@@ -6,8 +6,6 @@
 
 SENet通过引入一个新的结构单元——“Squeeze-and-Excitation”（SE）块——来增强卷积神经网络的代表能力。是提高卷积神经网络（CNN）的表征能力，通过显式地建模卷积特征通道之间的依赖关系，从而在几乎不增加计算成本的情况下显著提升网络性能。SE模块由两个主要操作组成：压缩（Squeeze）和激励（Excitation）
 
-
-
 ### 2、**机制**
 
 **1、压缩操作：**
@@ -21,8 +19,6 @@ SE模块首先通过全局平均池化操作对输入特征图的空间维度（
 **3、特征重新校准：**
 
 激励操作的输出用于重新校准原始输入特征图。输入特征图的每个通道都由激励输出中对应的标量进行缩放。这一步骤有选择地强调信息丰富的特征，同时抑制不太有用的特征，使模型能够专注于任务中最相关的特征。
-
-
 
 ### 3、**独特优势**
 
@@ -46,8 +42,6 @@ SENet在多个基准数据集上展现出了优异的性能，包括图像分类
 
 通过调整通道特征的重要性，SENet能够更有效地利用模型的特征表征能力。这种增强的表征能力使得模型能够在更细粒度上理解图像内容，从而提高决策的准确性和鲁棒性。
 
-
-
 ### 4、**代码：**
 
 ```python
@@ -55,6 +49,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
+
 
 class SEAttention(nn.Module):
     # 初始化SE模块，channel为通道数，reduction为降维比率
@@ -90,6 +85,7 @@ class SEAttention(nn.Module):
         y = self.fc(y).view(b, c, 1, 1)  # 通过全连接层计算通道重要性，调整形状以匹配原始特征图的形状
         return x * y.expand_as(x)  # 将通道重要性系数应用到原始特征图上，进行特征重新校准
 
+
 # 示例使用
 if __name__ == '__main__':
     input = torch.randn(50, 512, 7, 7)  # 随机生成一个输入特征图
@@ -99,12 +95,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
-
-
-
-
 # 2、CBAM模块
 
 论文《CBAM: Convolutional Block Attention Module》
@@ -112,8 +102,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 是为了提升前馈卷积神经网络性能而提出的一种简单而有效的注意力模块。CBAM通过顺序地推断两个维度上的注意力图（通道和空间），然后将这些注意力图乘以输入特征图进行自适应特征精炼。
-
-
 
 ### 2、机制
 
@@ -125,13 +113,12 @@ if __name__ == '__main__':
 
 利用特征之间的空间关系来生成空间注意力图。与通道注意力不同，空间注意力关注于“在哪里”是一个有信息的部分，这与通道注意力是互补的。为了计算空间注意力，CBAM首先沿着通道轴应用平均池化和最大池化操作，然后将它们连接起来生成一个高效的特征描述符。在该描述符上应用一个卷积层来生成空间注意力图。
 
-
-
 ### 3、独特优势
 
 1、**双重注意力机制**：
 
-CBAM首次将通道注意力（Channel Attention）和空间注意力（Spatial Attention）顺序结合起来，对输入特征进行两阶段的精炼。这种设计让模型先关注于“哪些通道是重要的”，然后再关注于“空间上哪些位置是重要的”，从而更加全面地捕获特征中的关键信息。
+CBAM首次将通道注意力（Channel Attention）和空间注意力（Spatial
+Attention）顺序结合起来，对输入特征进行两阶段的精炼。这种设计让模型先关注于“哪些通道是重要的”，然后再关注于“空间上哪些位置是重要的”，从而更加全面地捕获特征中的关键信息。
 
 2、**自适应特征重标定**：
 
@@ -149,13 +136,12 @@ CBAM模块设计简洁，可轻松集成到各种现有的CNN架构中，如ResN
 
 CBAM中通道和空间注意力的顺序应用，形成了一种逐步精炼输入特征的策略。这种从通道到空间的逐步细化过程，有助于模型更有效地利用注意力机制，逐渐提取并强调更加有意义的特征，而不是一次性地处理所有信息。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 from torch import nn
+
 
 # 通道注意力模块
 class ChannelAttention(nn.Module):
@@ -176,6 +162,7 @@ class ChannelAttention(nn.Module):
         out = avg_out + max_out  # 将两种池化的特征加权和作为输出
         return self.sigmoid(out)  # 使用sigmoid激活函数计算注意力权重
 
+
 # 空间注意力模块
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
@@ -185,7 +172,7 @@ class SpatialAttention(nn.Module):
         padding = 3 if kernel_size == 7 else 1  # 根据核心大小设置填充
 
         # 卷积层用于从连接的平均池化和最大池化特征图中学习空间注意力权重
-        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)  
+        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()  # Sigmoid函数生成最终的注意力权重
 
     def forward(self, x):
@@ -194,6 +181,7 @@ class SpatialAttention(nn.Module):
         x = torch.cat([avg_out, max_out], dim=1)  # 将两种池化的特征图连接起来
         x = self.conv1(x)  # 通过卷积层处理连接后的特征图
         return self.sigmoid(x)  # 使用sigmoid激活函数计算注意力权重
+
 
 # CBAM模块
 class CBAM(nn.Module):
@@ -207,6 +195,7 @@ class CBAM(nn.Module):
         result = out * self.sa(out)  # 使用空间注意力进一步加权特征图
         return result  # 返回最终的特征图
 
+
 # 示例使用
 if __name__ == '__main__':
     block = CBAM(64)  # 创建一个CBAM模块，输入通道为64
@@ -216,8 +205,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 3、ECA模块
 
 论文《ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks》
@@ -226,13 +213,9 @@ if __name__ == '__main__':
 
 ECA模块旨在通过引入一种高效的通道注意力机制来增强深度卷积神经网络的特征表示能力。它着重于捕获通道间的动态依赖关系，从而使网络能够更加精确地重视对当前任务更重要的特征，提升模型在各种视觉任务上的性能。
 
-
-
 ### 2、机制
 
 ECA模块的核心机制是通过一个简单而高效的一维卷积来自适应地捕捉通道之间的依赖性，而无需降维和升维的过程。这种设计避免了传统注意力机制中复杂的多层感知机（MLP）结构，减少了模型复杂度和计算负担。ECA通过计算一个自适应的核大小，直接在通道特征上应用一维卷积，从而学习到每个通道相对于其他通道的重要性。
-
-
 
 ### 3、独特优势
 
@@ -252,14 +235,13 @@ ECA模块根据通道数自适应地调整一维卷积的核大小，使其能�
 
 由于其轻量级和高效的特性，ECA模块可以轻松地嵌入到任何现有的CNN架构中，无需对原始网络架构进行大的修改，为提升网络性能提供了一种简单而有效的方式。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 from torch import nn
 from torch.nn import init
+
 
 # 定义ECA注意力模块的类
 class ECAAttention(nn.Module):
@@ -295,6 +277,7 @@ class ECAAttention(nn.Module):
         y = y.permute(0, 2, 1).unsqueeze(-1)  # 再次转置并增加一个维度，以匹配原始输入x的维度
         return x * y.expand_as(x)  # 将注意力权重应用到原始输入x上，通过广播机制扩展维度并执行逐元素乘法
 
+
 # 示例使用
 if __name__ == '__main__':
     block = ECAAttention(kernel_size=3)  # 实例化ECA注意力模块，指定核大小为3
@@ -304,29 +287,27 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 4、CoordAttention模块
 
 论文《Coordinate Attention for Efficient Mobile Network Design》
 
 ### 1、作用
+
 Coordinate Attention提出了一种新的注意力机制，用于在移动网络中嵌入位置信息到通道注意力中。这种方法不仅关注“哪些通道是重要的”，而且关注“在哪里”关注，通过更精细地控制空间选择性注意力图的生成，进一步提升模型性能。
 
-
-
 ### 2、机制
+
 1、**坐标信息嵌入**：
 
-与传统的通道注意力通过2D全局池化将特征张量转换为单一特征向量不同，Coordinate Attention将通道注意力分解为两个1D特征编码过程，分别沿两个空间方向聚合特征。这种方法能够捕捉沿一个空间方向的长程依赖性，同时保留沿另一个空间方向的精确位置信息。
+与传统的通道注意力通过2D全局池化将特征张量转换为单一特征向量不同，Coordinate
+Attention将通道注意力分解为两个1D特征编码过程，分别沿两个空间方向聚合特征。这种方法能够捕捉沿一个空间方向的长程依赖性，同时保留沿另一个空间方向的精确位置信息。
 
 2、**坐标注意力生成**：
 
 将沿垂直和水平方向聚合的特征图编码成一对方向感知和位置敏感的注意力图，这两个注意力图被互补地应用到输入特征图上，增强了对兴趣对象的表示。
 
-
-
 ### 3、独特优势
+
 1、**方向感知和位置敏感**：
 
 Coordinate Attention通过生成方向感知和位置敏感的注意力图，使模型能够更准确地定位和识别兴趣对象。这种注意力图能够精确地高亮兴趣区域，提升了模型对空间结构的理解能力。
@@ -339,14 +320,13 @@ Coordinate Attention的设计简洁而高效，可以轻松嵌入到经典的移
 
 Coordinate Attention不仅在ImageNet分类任务上有效，更在下游任务如对象检测和语义分割上展现出更好的性能。这证明了其对于捕捉关键信息的能力，尤其在需要密集预测的任务中表现出色。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 
 # 定义h_sigmoid激活函数，这是一种硬Sigmoid函数
 class h_sigmoid(nn.Module):
@@ -357,6 +337,7 @@ class h_sigmoid(nn.Module):
     def forward(self, x):
         return self.relu(x + 3) / 6  # 公式为ReLU6(x+3)/6，模拟Sigmoid激活函数
 
+
 # 定义h_swish激活函数，这是基于h_sigmoid的Swish函数变体
 class h_swish(nn.Module):
     def __init__(self, inplace=True):
@@ -365,6 +346,7 @@ class h_swish(nn.Module):
 
     def forward(self, x):
         return x * self.sigmoid(x)  # 公式为x * h_sigmoid(x)
+
 
 # 定义Coordinate Attention模块
 class CoordAtt(nn.Module):
@@ -407,6 +389,7 @@ class CoordAtt(nn.Module):
 
         return out  # 返回输出
 
+
 # 示例使用
 if __name__ == '__main__':
     block = CoordAtt(64, 64)  # 实例化Coordinate Attention模块
@@ -416,17 +399,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 5、SimAM模块
 
 论文《SimAM: A Simple, Parameter-Free Attention Module for Convolutional Neural Networks》
 
 ### 1、作用
 
-SimAM（Simple Attention Module）提出了一个概念简单但非常有效的注意力模块，用于卷积神经网络。与现有的通道维度和空间维度注意力模块不同，SimAM能够为特征图中的每个神经元推断出3D注意力权重，而无需在原始网络中添加参数。
-
-
+SimAM（Simple Attention
+Module）提出了一个概念简单但非常有效的注意力模块，用于卷积神经网络。与现有的通道维度和空间维度注意力模块不同，SimAM能够为特征图中的每个神经元推断出3D注意力权重，而无需在原始网络中添加参数。
 
 ### 2、机制
 
@@ -437,8 +417,6 @@ SimAM基于著名的神经科学理论，通过优化一个能量函数来找出
 2、**快速闭合形式解决方案**：
 
 对于能量函数，SimAM推导出了一个快速的闭合形式解决方案，并展示了这个解决方案可以在不到十行代码中实现。这种方法避免了结构调整的繁琐工作，使模块的设计更为简洁高效。
-
-
 
 ### 3、独特优势
 
@@ -454,14 +432,13 @@ SimAM的一个显著优势是它不增加任何额外的参数。这使得SimAM�
 
 SimAM的设计灵感来自于人类大脑中的注意力机制，尤其是空间抑制现象，使其在捕获视觉任务中的关键信息方面更为高效和自然。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 import torch.nn as nn
 from thop import profile  # 引入thop库来计算模型的FLOPs和参数数量
+
 
 # 定义SimAM模块
 class Simam_module(torch.nn.Module):
@@ -480,6 +457,7 @@ class Simam_module(torch.nn.Module):
         # 返回经过注意力加权的输入特征
         return x * self.act(y)
 
+
 # 示例使用
 if __name__ == '__main__':
     model = Simam_module().cuda()  # 实例化SimAM模块并移到GPU上
@@ -493,8 +471,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 6、ACmix模块
 
 论文《On the Integration of Self-Attention and Convolution》
@@ -502,8 +478,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 ACmix设计为一个结合了卷积和自注意力机制优势的混合模块，旨在通过融合两种机制的优点来增强模型的表示能力和性能。
-
-
 
 ### 2、机制
 
@@ -517,9 +491,8 @@ ACmix通过结合自注意力机制的全局感知能力和卷积的局部特征
 
 3、**改进的位移与求和操作**：
 
-ACmix中卷积路径的中间特征遵循位移和求和操作，类似于传统卷积模块。为了提高实际推理效率，ACmix采用了深度可分离卷积（depthwise convolution）来代替低效的张量位移操作。
-
-
+ACmix中卷积路径的中间特征遵循位移和求和操作，类似于传统卷积模块。为了提高实际推理效率，ACmix采用了深度可分离卷积（depthwise
+convolution）来代替低效的张量位移操作。
 
 ### 3、独特优势
 
@@ -530,8 +503,6 @@ ACmix通过优化计算路径和减少重复计算，提高了整体模块的计
 2、**性能提升**：
 
 通过有效结合卷积和自注意力的优点，ACmix在多个视觉任务上显示出优于单一机制（仅卷积或仅自注意力）的性能，展示了其广泛的应用潜力。
-
-
 
 ### 4、代码
 
@@ -553,20 +524,24 @@ def position(H, W, is_cuda=True):
     loc = torch.cat([loc_w.unsqueeze(0), loc_h.unsqueeze(0)], 0).unsqueeze(0)
     return loc
 
+
 # 定义一个函数实现步长操作，用于降采样
 def stride(x, stride):
     b, c, h, w = x.shape
     return x[:, :, ::stride, ::stride]
+
 
 # 初始化函数，将张量的值填充为0.5
 def init_rate_half(tensor):
     if tensor is not None:
         tensor.data.fill_(0.5)
 
+
 # 初始化函数，将张量的值填充为0
 def init_rate_0(tensor):
     if tensor is not None:
         tensor.data.fill_(0.)
+
 
 # 定义ACmix模块的类
 class ACmix(nn.Module):
@@ -665,35 +640,33 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 7、Axial_attention模块
 
 论文《AXIAL ATTENTION IN MULTIDIMENSIONAL TRANSFORMERS》
 
 ### 1、作用
 
-Axial Attention 提出了一种用于图像和其他作为高维张量组织的数据的自注意力基的自回归模型。传统的自回归模型要么因高维数据而导致计算资源需求过大，要么为了减少资源需求而在分布表达性或实现简便性方面做出妥协。Axial Transformers 设计旨在在保持数据上联合分布的完整表达性和易于使用标准深度学习框架实现的同时，要求合理的内存和计算资源，并在标准生成建模基准上实现最先进的结果。
-
-
+Axial Attention 提出了一种用于图像和其他作为高维张量组织的数据的自注意力基的自回归模型。传统的自回归模型要么因高维数据而导致计算资源需求过大，要么为了减少资源需求而在分布表达性或实现简便性方面做出妥协。Axial
+Transformers 设计旨在在保持数据上联合分布的完整表达性和易于使用标准深度学习框架实现的同时，要求合理的内存和计算资源，并在标准生成建模基准上实现最先进的结果。
 
 ### 2、机制
 
 1、**轴向注意力**：
 
-与对张量元素的序列应用标准自注意力不同，Axial Transformer 沿着张量的单个轴应用注意力，称为“轴向注意力”，而不是展平张量。这种操作在计算和内存使用上比标准自注意力节省显著，因为它自然地与张量的多个维度对齐。
+与对张量元素的序列应用标准自注意力不同，Axial Transformer
+沿着张量的单个轴应用注意力，称为“轴向注意力”，而不是展平张量。这种操作在计算和内存使用上比标准自注意力节省显著，因为它自然地与张量的多个维度对齐。
 
 2、**半并行结构**：
 
-Axial Transformer 的层结构允许在解码时并行计算绝大多数上下文，而无需引入任何独立性假设，这对于即使是非常大的Axial Transformer也是广泛适用的。
-
-
+Axial Transformer 的层结构允许在解码时并行计算绝大多数上下文，而无需引入任何独立性假设，这对于即使是非常大的Axial
+Transformer也是广泛适用的。
 
 ### 3、独特优势
 
 1、**计算效率**：
 
-Axial Transformer 通过轴向注意力操作在资源使用上实现了显著节省，对于具有 N = N1/d × · · · × N1/d 形状的 d 维张量，相比标准自注意力，轴向注意力在资源上节省了 O(N(d−1)/d) 因子。
+Axial Transformer 通过轴向注意力操作在资源使用上实现了显著节省，对于具有 N = N1/d × · · · × N1/d 形状的 d
+维张量，相比标准自注意力，轴向注意力在资源上节省了 O(N(d−1)/d) 因子。
 
 2、**完全表达性**：
 
@@ -702,8 +675,6 @@ Axial Transformer 通过轴向注意力操作在资源使用上实现了显著�
 3、**简单易实现**：
 
 Axial Transformer 不需要为GPU或TPU编写特定的子程序，它可以使用深度学习框架中广泛可用的高效操作（主要是密集的MatMul操作）简单实现。
-
-
 
 ### 4、代码
 
@@ -746,7 +717,6 @@ class Deterministic(nn.Module):
             if self.cuda_in_fwd:
                 set_device_states(self.gpu_devices, self.gpu_states)
             return self.net(*args, **kwargs)
-
 
 
 class ReversibleBlock(nn.Module):
@@ -849,8 +819,6 @@ class ReversibleSequence(nn.Module):
         return torch.stack(x.chunk(2, dim=1)).mean(dim=0)
 
 
-
-
 def exists(val):
     return val is not None
 
@@ -864,8 +832,6 @@ def sort_and_return_indices(arr):
     arr = zip(arr, indices)
     arr = sorted(arr)
     return map_el_ind(arr, 0), map_el_ind(arr, 1)
-
-
 
 
 def calculate_permutations(num_dimensions, emb_dim):
@@ -882,8 +848,6 @@ def calculate_permutations(num_dimensions, emb_dim):
         permutations.append(permutation)
 
     return permutations
-
-
 
 
 class ChanLayerNorm(nn.Module):
@@ -936,18 +900,13 @@ class PermuteToFrom(nn.Module):
         shape = axial.shape
         *_, t, d = shape
 
-      
         axial = axial.reshape(-1, t, d)
 
-        
         axial = self.fn(axial, **kwargs)
 
-       
         axial = axial.reshape(*shape)
         axial = axial.permute(*self.inv_permutation).contiguous()
         return axial
-
-
 
 
 class AxialPositionalEmbedding(nn.Module):
@@ -970,7 +929,6 @@ class AxialPositionalEmbedding(nn.Module):
         for i in range(self.num_axials):
             x = x + getattr(self, f'param_{i}')
         return x
-
 
 
 class SelfAttention(nn.Module):
@@ -1002,7 +960,6 @@ class SelfAttention(nn.Module):
         return out
 
 
-
 class AxialAttention(nn.Module):
     def __init__(self, dim, num_dimensions=2, heads=8, dim_heads=None, dim_index=-1, sum_axial_out=True):
         assert (dim % heads) == 0, 'hidden dimension must be divisible by number of heads'
@@ -1029,8 +986,6 @@ class AxialAttention(nn.Module):
         for axial_attn in self.axial_attentions:
             out = axial_attn(out)
         return out
-
-
 
 
 class AxialImageTransformer(nn.Module):
@@ -1065,7 +1020,6 @@ class AxialImageTransformer(nn.Module):
         return self.layers(x)
 
 
-
 if __name__ == '__main__':
     block = AxialImageTransformer(
         dim=64,
@@ -1078,17 +1032,16 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 8、CoTAttention模块
 
 论文《Contextual Transformer Networks for Visual Recognition》
 
 ### 1、 作用
 
-Contextual Transformer (CoT) block 设计为视觉识别的一种新颖的 Transformer 风格模块。该设计充分利用输入键之间的上下文信息指导动态注意力矩阵的学习，从而加强视觉表示的能力。CoT block 首先通过 3x3 卷积对输入键进行上下文编码，得到输入的静态上下文表示。然后，将编码后的键与输入查询合并，通过两个连续的 1x1 卷积学习动态多头注意力矩阵。学习到的注意力矩阵乘以输入值，实现输入的动态上下文表示。最终将静态和动态上下文表示的融合作为输出。
-
-
+Contextual Transformer (CoT) block 设计为视觉识别的一种新颖的 Transformer
+风格模块。该设计充分利用输入键之间的上下文信息指导动态注意力矩阵的学习，从而加强视觉表示的能力。CoT block 首先通过 3x3
+卷积对输入键进行上下文编码，得到输入的静态上下文表示。然后，将编码后的键与输入查询合并，通过两个连续的 1x1
+卷积学习动态多头注意力矩阵。学习到的注意力矩阵乘以输入值，实现输入的动态上下文表示。最终将静态和动态上下文表示的融合作为输出。
 
 ### 2、机制
 
@@ -1104,8 +1057,6 @@ Contextual Transformer (CoT) block 设计为视觉识别的一种新颖的 Trans
 
 将静态上下文和通过上下文化自注意力得到的动态上下文结合，作为 CoT block 的最终输出。
 
-
-
 ### 3、 独特优势
 
 1、**上下文感知**：
@@ -1118,9 +1069,8 @@ CoT 设计巧妙地将上下文挖掘与自注意力学习统一到单一架构�
 
 3、**灵活替换与优化**：
 
-CoT block 可以直接替换现有 ResNet 架构中的标准卷积，不增加参数和 FLOP 预算的情况下实现转换为 Transformer 风格的骨干网络（CoTNet），通过广泛的实验验证了其在多种应用（如图像识别、目标检测和实例分割）中的优越性。
-
-
+CoT block 可以直接替换现有 ResNet 架构中的标准卷积，不增加参数和 FLOP 预算的情况下实现转换为 Transformer
+风格的骨干网络（CoTNet），通过广泛的实验验证了其在多种应用（如图像识别、目标检测和实例分割）中的优越性。
 
 ### 4、代码
 
@@ -1129,6 +1079,7 @@ CoT block 可以直接替换现有 ResNet 架构中的标准卷积，不增加�
 import torch
 from torch import nn
 from torch.nn import functional as F
+
 
 class CoTAttention(nn.Module):
     # 初始化CoT注意力模块
@@ -1139,7 +1090,7 @@ class CoTAttention(nn.Module):
 
         # 定义用于键(key)的卷积层，包括一个分组卷积，BatchNorm和ReLU激活
         self.key_embed = nn.Sequential(
-            nn.Conv2d(dim, dim, kernel_size=kernel_size, padding=kernel_size//2, groups=4, bias=False),
+            nn.Conv2d(dim, dim, kernel_size=kernel_size, padding=kernel_size // 2, groups=4, bias=False),
             nn.BatchNorm2d(dim),
             nn.ReLU()
         )
@@ -1154,10 +1105,10 @@ class CoTAttention(nn.Module):
         factor = 4
         # 定义注意力嵌入层，由两个卷积层、一个BatchNorm层和ReLU激活组成
         self.attention_embed = nn.Sequential(
-            nn.Conv2d(2*dim, 2*dim//factor, 1, bias=False),
-            nn.BatchNorm2d(2*dim//factor),
+            nn.Conv2d(2 * dim, 2 * dim // factor, 1, bias=False),
+            nn.BatchNorm2d(2 * dim // factor),
             nn.ReLU(),
-            nn.Conv2d(2*dim//factor, kernel_size*kernel_size*dim, 1)
+            nn.Conv2d(2 * dim // factor, kernel_size * kernel_size * dim, 1)
         )
 
     def forward(self, x):
@@ -1168,12 +1119,13 @@ class CoTAttention(nn.Module):
 
         y = torch.cat([k1, x], dim=1)  # 将键的静态表示和原始输入连接
         att = self.attention_embed(y)  # 生成动态注意力权重
-        att = att.reshape(bs, c, self.kernel_size*self.kernel_size, h, w)
+        att = att.reshape(bs, c, self.kernel_size * self.kernel_size, h, w)
         att = att.mean(2, keepdim=False).view(bs, c, -1)  # 计算注意力权重的均值并调整形状
         k2 = F.softmax(att, dim=-1) * v  # 应用注意力权重到值上
         k2 = k2.view(bs, c, h, w)  # 调整形状以匹配输出
 
         return k1 + k2  # 返回键的静态和动态表示的总和
+
 
 # 实例化CoTAttention模块并测试
 if __name__ == '__main__':
@@ -1184,17 +1136,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 9、TripletAttention模块
 
 论文《Rotate to Attend: Convolutional Triplet Attention Module》
 
 ### 1、作用
 
-Triplet Attention是一种新颖的注意力机制，它通过捕获跨维度交互，利用三分支结构来计算注意力权重。对于输入张量，Triplet Attention通过旋转操作建立维度间的依赖关系，随后通过残差变换对信道和空间信息进行编码，实现了几乎不增加计算成本的情况下，有效增强视觉表征的能力。
-
-
+Triplet Attention是一种新颖的注意力机制，它通过捕获跨维度交互，利用三分支结构来计算注意力权重。对于输入张量，Triplet
+Attention通过旋转操作建立维度间的依赖关系，随后通过残差变换对信道和空间信息进行编码，实现了几乎不增加计算成本的情况下，有效增强视觉表征的能力。
 
 ### 2、机制
 
@@ -1209,8 +1158,6 @@ Triplet Attention包含三个分支，每个分支负责捕获输入的空间维
 3、**注意力权重的生成**：
 
 利用sigmoid激活层生成注意力权重，并应用于排列后的输入张量，然后将其排列回原始输入形状。
-
-
 
 ### 3、 独特优势
 
@@ -1228,21 +1175,22 @@ Triplet Attention通过捕获输入张量的跨维度交互，提供了丰富的
 
 总的来说，Triplet Attention通过其独特的三分支结构和跨维度交互机制，在提高模型性能的同时，保持了计算效率，显示了其在各种视觉任务中的应用潜力。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 import torch.nn as nn
 
+
 # 定义一个基本的卷积模块，包括卷积、批归一化和ReLU激活
 class BasicConv(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1, groups=1, relu=True, bn=True, bias=False):
+    def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1, groups=1, relu=True,
+                 bn=True, bias=False):
         super(BasicConv, self).__init__()
         self.out_channels = out_planes
         # 定义卷积层
-        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias)
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding,
+                              dilation=dilation, groups=groups, bias=bias)
         # 条件性地添加批归一化层
         self.bn = nn.BatchNorm2d(out_planes, eps=1e-5, momentum=0.01, affine=True) if bn else None
         # 条件性地添加ReLU激活函数
@@ -1256,11 +1204,13 @@ class BasicConv(nn.Module):
             x = self.relu(x)  # 应用ReLU
         return x
 
+
 # 定义ZPool模块，结合最大池化和平均池化结果
 class ZPool(nn.Module):
     def forward(self, x):
         # 结合最大值和平均值
         return torch.cat((torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1)
+
 
 # 定义注意力门，用于根据输入特征生成注意力权重
 class AttentionGate(nn.Module):
@@ -1275,6 +1225,7 @@ class AttentionGate(nn.Module):
         x_out = self.conv(x_compress)  # 通过卷积生成注意力权重
         scale = torch.sigmoid_(x_out)  # 应用Sigmoid激活
         return x * scale  # 将注意力权重乘以原始特征
+
 
 # 定义TripletAttention模块，结合了三种不同方向的注意力门
 class TripletAttention(nn.Module):
@@ -1301,6 +1252,7 @@ class TripletAttention(nn.Module):
             x_out = 1 / 2 * (x_out11 + x_out21)  # 结合两个方向的结果（如果no_spatial为True）
         return x_out
 
+
 # 示例代码
 if __name__ == '__main__':
     input = torch.randn(50, 512, 7, 7)  # 生成随机输入
@@ -1310,8 +1262,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 10、S2Attention模块
 
 论文《S2-MLPV2: IMPROVED SPATIAL-SHIFT MLP ARCHITECTURE FOR VISION》
@@ -1319,8 +1269,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 S2-MLPv2是一个改进的空间位移多层感知器（MLP）视觉骨架网络，旨在通过利用通道维度的扩展和分割以及采用分割注意力（split-attention）操作来增强图像识别准确性。与传统的S2-MLP相比，S2-MLPv2在不同的部分执行不同的空间位移操作，然后利用分割注意力操作来融合这些部分。此外，该方法采用了较小尺度的图像块和金字塔结构，进一步提升图像识别精度。
-
-
 
 ### 2、机制
 
@@ -1340,8 +1288,6 @@ S2-MLPv2是一个改进的空间位移多层感知器（MLP）视觉骨架网络
 
 采用较小尺度的图像块和层次化的金字塔结构，以捕获更精细的视觉细节，提高模型的识别精度。
 
-
-
 ### 3、独特优势
 
 1、**增强的特征表征能力**：
@@ -1360,8 +1306,6 @@ S2-MLPv2是一个改进的空间位移多层感知器（MLP）视觉骨架网络
 
 即使在没有自注意力机制和额外训练数据的情况下，S2-MLPv2也能在ImageNet-1K基准上达到83.6%的顶级1准确率，表现优于其他MLP模型，同时参数数量更少，表明其在实际部署中具有竞争力。
 
-
-
 ### 4、代码
 
 ```python
@@ -1369,6 +1313,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
+
 
 def spatial_shift1(x):
     # 实现第一种空间位移，位移图像的四分之一块
@@ -1380,6 +1325,7 @@ def spatial_shift1(x):
     x[:, :, :h - 1, 3 * c // 4:] = x[:, :, 1:, 3 * c // 4:]
     return x
 
+
 def spatial_shift2(x):
     # 实现第二种空间位移，逻辑与spatial_shift1相似，但位移方向不同
     b, w, h, c = x.size()
@@ -1389,6 +1335,7 @@ def spatial_shift2(x):
     x[:, 1:, :, c // 2:c * 3 // 4] = x[:, :w - 1, :, c // 2:c * 3 // 4]
     x[:, :w - 1, :, 3 * c // 4:] = x[:, 1:, :, 3 * c // 4:]
     return x
+
 
 class SplitAttention(nn.Module):
     # 定义分割注意力模块，使用MLP层进行特征转换和注意力权重计算
@@ -1415,6 +1362,7 @@ class SplitAttention(nn.Module):
         out = torch.sum(out, 1).reshape(b, h, w, c)  # 聚合并调整形状
         return out
 
+
 class S2Attention(nn.Module):
     # S2注意力模块，整合空间位移和分割注意力
     def __init__(self, channels=512):
@@ -1437,6 +1385,7 @@ class S2Attention(nn.Module):
         x = x.permute(0, 3, 1, 2)  # 调整维度顺序回原始
         return x
 
+
 # 示例代码
 if __name__ == '__main__':
     input = torch.randn(50, 512, 7, 7)  # 创建输入张量
@@ -1446,29 +1395,27 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 11、DilateForme模块
 
 论文《DilateFormer: Multi-Scale Dilated Transformer for Visual Recognition》
 
 ### 1、作用
+
 DilateFormer旨在通过采用多尺度膨胀注意力机制，提升视觉识别任务中的特征提取能力。这种方法通过在不同的尺度上应用膨胀卷积，捕获图像的局部和全局依赖性。
 
-
-
 ### 2、机制
+
 1、**DilateAttention模块**：
 
-该模块实现了膨胀注意力机制。它首先通过`nn.Unfold`提取滑动局部块，然后利用膨胀参数改变局部块的尺寸和间隔，实现对不同尺度特征的感知。通过对查询（q）、键（k）和值（v）的操作，计算注意力权重，并通过加权求和获取输出特征图。
+该模块实现了膨胀注意力机制。它首先通过`nn.Unfold`
+提取滑动局部块，然后利用膨胀参数改变局部块的尺寸和间隔，实现对不同尺度特征的感知。通过对查询（q）、键（k）和值（v）的操作，计算注意力权重，并通过加权求和获取输出特征图。
 
 2、**MultiDilatelocalAttention模块**：
 
 该模块将输入特征图在通道维度拆分为多个尺度（根据膨胀率的不同），然后对每个尺度分别应用DilateAttention。这允许模型在不同的尺度上捕获信息，最后通过投影层合并各尺度的输出特征。
 
-
-
 ### 3、独特优势
+
 1、**多尺度感知能力**：
 
 通过结合不同膨胀率的膨胀注意力机制，DilateFormer能够同时捕获图像的局部细节和全局上下文信息，增强模型的特征提取能力。
@@ -1480,8 +1427,6 @@ DilateFormer旨在通过采用多尺度膨胀注意力机制，提升视觉识�
 3、**灵活性和适应性**：
 
 该模型能够根据任务需求调整膨胀率的设置，灵活适应不同的视觉识别任务，展现出良好的泛化能力。
-
-
 
 ### 4、代码
 
@@ -1499,26 +1444,30 @@ from torch.nn import functional as F
 
 class DilateAttention(nn.Module):
     "Implementation of Dilate-attention"
+
     def __init__(self, head_dim, qk_scale=None, attn_drop=0, kernel_size=3, dilation=1):
         super().__init__()
         self.head_dim = head_dim
         self.scale = qk_scale or head_dim ** -0.5
-        self.kernel_size=kernel_size
+        self.kernel_size = kernel_size
         # nn.unfold(): Extracts sliding local blocks from a batched input tensor.  local block是根据卷积核、膨胀率确定下来的，以此达到局部、稀疏的效果
-        self.unfold = nn.Unfold(kernel_size=kernel_size, dilation=dilation, padding=dilation*(kernel_size-1)//2, stride=1)
+        self.unfold = nn.Unfold(kernel_size=kernel_size, dilation=dilation, padding=dilation * (kernel_size - 1) // 2,
+                                stride=1)
         self.attn_drop = nn.Dropout(attn_drop)
 
-    def forward(self,q,k,v):
-        #(B, scale_d, H, W)    scale_d == d;   C = scale_num * scale_d
-        B,d,H,W = q.shape
+    def forward(self, q, k, v):
+        # (B, scale_d, H, W)    scale_d == d;   C = scale_num * scale_d
+        B, d, H, W = q.shape
 
         # 首先对q进行变换:(B,d,H,W) -->reshape--> (B,h,hd,1,HW) -->permute--> (B,h,HW,1,hd)   d=h*hd; (hd:head_dim), h:注意力头的个数, 这里的注意力头的个数和MultiDilatelocalAttention中的设置是不一样的,在MultiDilatelocalAttention中, 也就是76行, 因为N个尺度平分了C个通道,所以在这里注意力头的个数h=(C/N)/head_dim
-        q = q.reshape([B, d//self.head_dim, self.head_dim, 1 ,H*W]).permute(0, 1, 4, 3, 2)   # B,h,N,1,d
+        q = q.reshape([B, d // self.head_dim, self.head_dim, 1, H * W]).permute(0, 1, 4, 3, 2)  # B,h,N,1,d
 
         # 通过滑动窗口选取keys patch: (B,d,H,W) --> (B,d*k*k,HW)   作者通过zero padding填充, 使输入前后的patch数量都为HW个;  k*k是滑窗的尺寸, 经过滑动窗口移动完之后,得到HW个patch,每个patch的大小是k*k  //////  unfold的计算方式见官网：https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html#torch.nn.Unfold, 解释见博客:https://blog.csdn.net/qq_37937847/article/details/115663343
         k = self.unfold(k)
         # 对k进行变换,便于与q进行乘法: (B,d*k*k,HW) --> (B,h,hd,k*k,HW) --> (B,h,HW,hd,k*k)    d=h*hd;  HW*(k*K): HW个patch,每个patch的大小是k*K个像素,每个像素的通道是hd
-        k = k.reshape([B, d//self.head_dim, self.head_dim, self.kernel_size*self.kernel_size, H*W]).permute(0, 1, 4, 2, 3)
+        k = k.reshape([B, d // self.head_dim, self.head_dim, self.kernel_size * self.kernel_size, H * W]).permute(0, 1,
+                                                                                                                  4, 2,
+                                                                                                                  3)
 
         # 每个query patch对选择的k*k个keys patch做注意力: (B,h,HW,1,hd) @ (B,h,HW,hd,k*k) = (B,h,HW,1,k*k)
         attn = (q @ k) * self.scale
@@ -1526,19 +1475,19 @@ class DilateAttention(nn.Module):
         attn = self.attn_drop(attn)
 
         # 同样,通过滑动窗口选取values patch:(B,d,H,W) --> (B,d*k*k,HW) --> (B,h,hd,k*k,HW) --> (B,h,HW,k*k,hd)
-        v = self.unfold(v).reshape([B, d//self.head_dim, self.head_dim, self.kernel_size*self.kernel_size, H*W]).permute(0, 1, 4, 3, 2)
+        v = self.unfold(v).reshape(
+            [B, d // self.head_dim, self.head_dim, self.kernel_size * self.kernel_size, H * W]).permute(0, 1, 4, 3, 2)
 
         # 通过attn权重对values加权求和:  (B,h,HW,1,k*k) @ (B,h,HW,k*k,hd) = (B,h,HW,1,hd) -->transpose--> (B,HW,h,1,hd) -->reshape--> (B,H,W,h*hd)==(B,H,W,d)
         x = (attn @ v).transpose(1, 2).reshape(B, H, W, d)
         return x
 
 
-
 class MultiDilatelocalAttention(nn.Module):
     "Implementation of Dilate-attention"
 
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None,
-                 attn_drop=0.,proj_drop=0., kernel_size=3, dilation=[1, 3]):
+                 attn_drop=0., proj_drop=0., kernel_size=3, dilation=[1, 3]):
         super().__init__()
         self.dim = dim
         self.num_heads = num_heads
@@ -1559,13 +1508,13 @@ class MultiDilatelocalAttention(nn.Module):
     def forward(self, x):
         B, H, W, C = x.shape
 
-        x = x.permute(0, 3, 1, 2) # (B,H,W,C)-->(B,C,H,W)
+        x = x.permute(0, 3, 1, 2)  # (B,H,W,C)-->(B,C,H,W)
 
         # 通过卷积层,将通道C映射到3C,并将其在通道上平分为qkv: (B,C,H,W) --> (B,3C,H,W) --> (B,3,scale_num,scale_d,H,W) --> (scale_num,3,B,scale_d,H,W)  //////  num_dilation==scale_num;  C=scale_num * scale_d   有多少个膨胀率就说明有多少个尺度,所以这里定义：num_dilation=scale_num
-        qkv = self.qkv(x).reshape(B, 3, self.num_dilation, C//self.num_dilation, H, W).permute(2, 1, 0, 3, 4, 5)
+        qkv = self.qkv(x).reshape(B, 3, self.num_dilation, C // self.num_dilation, H, W).permute(2, 1, 0, 3, 4, 5)
 
         # (B,C,H,W) --> (B,scale_num,scale_d,H,W) --> (scale_num,B,H,W,scale_d)
-        x = x.reshape(B, self.num_dilation, C//self.num_dilation, H, W).permute(1, 0, 3, 4, 2 )
+        x = x.reshape(B, self.num_dilation, C // self.num_dilation, H, W).permute(1, 0, 3, 4, 2)
 
         # 循环计算每一个尺度,在这里dilation=[1, 3],有两种取值,意味着有两个尺度  【假设有8个注意力头,两个尺度, 那每一个尺度在计算注意力的时候都分成4个头, 大家可以详细的看看注释, 加油！】
         for i in range(self.num_dilation):
@@ -1579,17 +1528,13 @@ class MultiDilatelocalAttention(nn.Module):
         return x
 
 
-
-
 if __name__ == '__main__':
     # (B,H,W,C)
-    input=torch.randn(1,16,16,512)
+    input = torch.randn(1, 16, 16, 512)
     Model = MultiDilatelocalAttention(dim=512)
-    output=Model(input)
+    output = Model(input)
     print(output.shape)
 ```
-
-
 
 # 12、DANet模块
 
@@ -1598,8 +1543,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 双重注意力网络（DANet）旨在通过引入自注意力机制来捕获丰富的上下文依赖性，从而提升场景分割任务中的特征提取能力。通过在空间和通道维度上捕捉全局依赖关系，DANet能够适应性地整合局部特征及其全局依赖，显著提高像素级识别的精确度。
-
-
 
 ### 2、机制
 
@@ -1610,8 +1553,6 @@ if __name__ == '__main__':
 2、**通道注意力模块**：
 
 类似地，该模块通过自注意力机制捕获不同通道图之间的依赖关系，每个通道图通过加权求和所有通道图的方式更新。这种机制使得模型能够强调相互依赖的通道图，进一步增强了特定语义的特征表示。
-
-
 
 ### 3、独特优势
 
@@ -1627,8 +1568,6 @@ DANet通过位置和通道注意力模块有效捕获全局上下文信息，无
 
 DANet在Cityscapes、PASCAL VOC 2012、PASCAL Context和COCO Stuff等多个挑战性的场景分割数据集上均取得了先进的性能，证明了其强大的泛化能力和有效性。
 
-
-
 ### 4、代码
 
 ```python
@@ -1636,6 +1575,8 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
+
+
 # 双重注意力网络（DANet）用于场景分割任务的实现
 
 
@@ -1644,7 +1585,7 @@ class ScaledDotProductAttention(nn.Module):
     实现缩放点积注意力机制。
     '''
 
-    def __init__(self, d_model, d_k, d_v, h,dropout=.1):
+    def __init__(self, d_model, d_k, d_v, h, dropout=.1):
         '''
                 参数:
                 :param d_model: 模型的输出维度
@@ -1657,7 +1598,7 @@ class ScaledDotProductAttention(nn.Module):
         self.fc_k = nn.Linear(d_model, h * d_k)
         self.fc_v = nn.Linear(d_model, h * d_v)
         self.fc_o = nn.Linear(h * d_v, d_model)
-        self.dropout=nn.Dropout(dropout)
+        self.dropout = nn.Dropout(dropout)
 
         self.d_model = d_model
         self.d_k = d_k
@@ -1665,7 +1606,6 @@ class ScaledDotProductAttention(nn.Module):
         self.h = h
 
         self.init_weights()
-
 
     def init_weights(self):
         for m in self.modules():
@@ -1704,7 +1644,7 @@ class ScaledDotProductAttention(nn.Module):
         if attention_mask is not None:
             att = att.masked_fill(attention_mask, -np.inf)
         att = torch.softmax(att, -1)
-        att=self.dropout(att)
+        att = self.dropout(att)
 
         out = torch.matmul(att, v).permute(0, 2, 1, 3).contiguous().view(b_s, nq, self.h * self.d_v)  # (b_s, nq, h*d_v)
         out = self.fc_o(out)  # (b_s, nq, d_model)
@@ -1716,7 +1656,7 @@ class SimplifiedScaledDotProductAttention(nn.Module):
     Scaled dot-product attention
     '''
 
-    def __init__(self, d_model, h,dropout=.1):
+    def __init__(self, d_model, h, dropout=.1):
         '''
         :param d_model: Output dimensionality of the model
         :param d_k: Dimensionality of queries and keys
@@ -1726,17 +1666,14 @@ class SimplifiedScaledDotProductAttention(nn.Module):
         super(SimplifiedScaledDotProductAttention, self).__init__()
 
         self.d_model = d_model
-        self.d_k = d_model//h
-        self.d_v = d_model//h
+        self.d_k = d_model // h
+        self.d_v = d_model // h
         self.h = h
 
         self.fc_o = nn.Linear(h * self.d_v, d_model)
-        self.dropout=nn.Dropout(dropout)
-
-
+        self.dropout = nn.Dropout(dropout)
 
         self.init_weights()
-
 
     def init_weights(self):
         for m in self.modules():
@@ -1775,7 +1712,7 @@ class SimplifiedScaledDotProductAttention(nn.Module):
         if attention_mask is not None:
             att = att.masked_fill(attention_mask, -np.inf)
         att = torch.softmax(att, -1)
-        att=self.dropout(att)
+        att = self.dropout(att)
 
         out = torch.matmul(att, v).permute(0, 2, 1, 3).contiguous().view(b_s, nq, self.h * self.d_v)  # (b_s, nq, h*d_v)
         out = self.fc_o(out)  # (b_s, nq, d_model)
@@ -1784,67 +1721,63 @@ class SimplifiedScaledDotProductAttention(nn.Module):
 
 class PositionAttentionModule(nn.Module):
 
-    def __init__(self,d_model=512,kernel_size=3,H=7,W=7):
+    def __init__(self, d_model=512, kernel_size=3, H=7, W=7):
         super().__init__()
-        self.cnn=nn.Conv2d(d_model,d_model,kernel_size=kernel_size,padding=(kernel_size-1)//2)
-        self.pa=ScaledDotProductAttention(d_model,d_k=d_model,d_v=d_model,h=1)
-    
-    def forward(self,x):
+        self.cnn = nn.Conv2d(d_model, d_model, kernel_size=kernel_size, padding=(kernel_size - 1) // 2)
+        self.pa = ScaledDotProductAttention(d_model, d_k=d_model, d_v=d_model, h=1)
+
+    def forward(self, x):
         # (B, C, H, W)
-        B, C, H, W=x.shape
-        y=self.cnn(x) # (B, C, H, W) --> (B, C, H, W)
-        y=y.view(B,C,-1).permute(0,2,1) # (B, C, H, W) --> (B,C,N)-->(B,N,C)   N=H*W
-        y=self.pa(y,y,y) #(B,N,C)
+        B, C, H, W = x.shape
+        y = self.cnn(x)  # (B, C, H, W) --> (B, C, H, W)
+        y = y.view(B, C, -1).permute(0, 2, 1)  # (B, C, H, W) --> (B,C,N)-->(B,N,C)   N=H*W
+        y = self.pa(y, y, y)  # (B,N,C)
         return y
 
 
 class ChannelAttentionModule(nn.Module):
-    
-    def __init__(self,d_model=512,kernel_size=3,H=7,W=7):
+
+    def __init__(self, d_model=512, kernel_size=3, H=7, W=7):
         super().__init__()
-        self.cnn=nn.Conv2d(d_model,d_model,kernel_size=kernel_size,padding=(kernel_size-1)//2)
-        self.pa=SimplifiedScaledDotProductAttention(H*W,h=1)
-    
-    def forward(self,x):
+        self.cnn = nn.Conv2d(d_model, d_model, kernel_size=kernel_size, padding=(kernel_size - 1) // 2)
+        self.pa = SimplifiedScaledDotProductAttention(H * W, h=1)
+
+    def forward(self, x):
         # (B, C, H, W)
-        B,C,H,W=x.shape
-        y=self.cnn(x) # (B, C, H, W) --> (B, C, H, W)
-        y=y.view(B,C,-1)  # (B, C, H, W)-->(B, C, N)  N=H*W
-        y=self.pa(y,y,y)  # (B, C, N)
+        B, C, H, W = x.shape
+        y = self.cnn(x)  # (B, C, H, W) --> (B, C, H, W)
+        y = y.view(B, C, -1)  # (B, C, H, W)-->(B, C, N)  N=H*W
+        y = self.pa(y, y, y)  # (B, C, N)
         return y
-
-
 
 
 class DAModule(nn.Module):
 
-    def __init__(self,d_model=512,kernel_size=3,H=7,W=7):
+    def __init__(self, d_model=512, kernel_size=3, H=7, W=7):
         super().__init__()
         # 位置注意力和通道注意力的区别就是：通道注意力没有通过卷积操作生成qkv
-        self.position_attention_module=PositionAttentionModule(d_model=512,kernel_size=3,H=7,W=7)
-        self.channel_attention_module=ChannelAttentionModule(d_model=512,kernel_size=3,H=7,W=7)
-    
-    def forward(self,input):
+        self.position_attention_module = PositionAttentionModule(d_model=512, kernel_size=3, H=7, W=7)
+        self.channel_attention_module = ChannelAttentionModule(d_model=512, kernel_size=3, H=7, W=7)
+
+    def forward(self, input):
         # (B, C, H, W)
-        B,C,H,W=input.shape
-        p_out=self.position_attention_module(input) # 执行位置注意力: (B, C, H, W)-->(B,N,C)
-        c_out=self.channel_attention_module(input)  # 执行通道注意力:(B, C, H, W)--> (B, C, N)
-        p_out=p_out.permute(0,2,1).view(B,C,H,W) #(B,N,C)-->(B,C,N)-->(B,C,H,W)
-        c_out=c_out.view(B,C,H,W) # (B,C,N)-->(B,C,H,W)
-        return p_out+c_out
+        B, C, H, W = input.shape
+        p_out = self.position_attention_module(input)  # 执行位置注意力: (B, C, H, W)-->(B,N,C)
+        c_out = self.channel_attention_module(input)  # 执行通道注意力:(B, C, H, W)--> (B, C, N)
+        p_out = p_out.permute(0, 2, 1).view(B, C, H, W)  # (B,N,C)-->(B,C,N)-->(B,C,H,W)
+        c_out = c_out.view(B, C, H, W)  # (B,C,N)-->(B,C,H,W)
+        return p_out + c_out
 
 
 # 两个注意力机制就不细讲了哦, 基本一模一样,只不过通道注意力没有通过卷积生成新的qkv,作者说会破坏原有通道之间的相关性。
 if __name__ == '__main__':
     # (B, C, H, W)
-    input=torch.randn(1,512,7,7)
-    Model=DAModule(d_model=512,kernel_size=3,H=7,W=7)
+    input = torch.randn(1, 512, 7, 7)
+    Model = DAModule(d_model=512, kernel_size=3, H=7, W=7)
     output = Model(input)
     print(output.shape)
 
 ```
-
-
 
 # 13、EMA模块
 
@@ -1853,8 +1786,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 论文提出了一种新颖的高效多尺度注意力（EMA）模块，专注于在保留每个通道信息的同时降低计算成本。EMA模块通过将部分通道重塑到批量维度并将通道维度分组为多个子特征，使得空间语义特征在每个特征组内得到良好分布。该模块的设计旨在提高图像分类和对象检测任务中的特征提取能力，通过编码全局信息来重新校准每个并行分支中的通道权重，并通过跨维度交互进一步聚合两个并行分支的输出特征，捕获像素级的成对关系。
-
-
 
 ### 2、机制
 
@@ -1865,8 +1796,6 @@ if __name__ == '__main__':
 2、**跨空间学习方法**：
 
 EMA模块通过跨空间学习方法，将两个并行子网络的输出特征图融合，这种方法使用矩阵点积操作来捕获像素级的成对关系，并突出全局上下文，以丰富特征聚合。
-
-
 
 ### 3、独特优势
 
@@ -1882,13 +1811,12 @@ EMA模块通过结合1x1和3x3卷积核的并行子网络，有效捕获不同�
 
 与现有的注意力机制相比，EMA在提高性能的同时，还实现了更低的参数数量和计算复杂度，特别是在进行图像分类和对象检测任务时。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 from torch import nn
+
 
 # 定义EMA模块
 class EMA(nn.Module):
@@ -1936,6 +1864,7 @@ class EMA(nn.Module):
         # 将调整后的特征图重塑回原始尺寸
         return (group_x * weights.sigmoid()).reshape(b, c, h, w)
 
+
 # 测试EMA模块
 if __name__ == '__main__':
     block = EMA(64).cuda()  # 实例化EMA模块，并移至CUDA设备
@@ -1945,17 +1874,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 14、Sea模块
 
 论文《SeaFormer: Squeeze-Enhanced Axial Transformer for Mobile Semantic Segmentation》
 
 ### 1、作用
 
-SeaFormer旨在为移动设备上的语义分割任务提供一种新颖的方法，通过设计一个squeeze-enhanced Axial Transformer（SeaFormer），能够在保持低延迟的同时，实现高效的计算和内存使用。该模型特别强调在移动设备上对高分辨率图像进行逐像素的语义分割，通过精心设计的注意力机制，实现对全局上下文信息的有效捕捉和利用。
-
-
+SeaFormer旨在为移动设备上的语义分割任务提供一种新颖的方法，通过设计一个squeeze-enhanced Axial
+Transformer（SeaFormer），能够在保持低延迟的同时，实现高效的计算和内存使用。该模型特别强调在移动设备上对高分辨率图像进行逐像素的语义分割，通过精心设计的注意力机制，实现对全局上下文信息的有效捕捉和利用。
 
 ### 2、机制
 
@@ -1966,8 +1892,6 @@ SeaFormer的核心是SEA Attention模块，该模块结合了轴向注意力机�
 2、**轻量级分割头**：
 
 为了进一步减少计算成本和提高推理速度，SeaFormer采用了简化的分割头，该分割头通过少量的卷积层实现特征图的最终语义分割，有效平衡了性能和效率。
-
-
 
 ### 3、独特优势
 
@@ -1983,8 +1907,6 @@ SeaFormer专为移动设备优化，其模型结构和参数都经过精心设�
 
 尽管SeaFormer主要针对移动语义分割任务设计，但其模型架构的通用性和灵活性也使其能够轻松扩展到其他视觉识别任务，如图像分类，展现了作为多功能移动友好骨干网络的潜力。
 
-
-
 ### 4、代码
 
 ```python
@@ -1993,8 +1915,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from mmcv.cnn import build_norm_layer
-#这里的mmcv安装包用以下的指令
+
+# 这里的mmcv安装包用以下的指令
 " pip install mmcv==2.0.0 -f https://download.openmmlab.com/mmcv/dist/cu117/torch1.13/index.html   "
+
 
 class Conv2d_BN(nn.Sequential):
     def __init__(self, a, b, ks=1, stride=1, pad=0, dilation=1,
@@ -2017,7 +1941,6 @@ class Conv2d_BN(nn.Sequential):
         self.add_module('bn', bn)
 
 
-
 class SqueezeAxialPositionalEmbedding(nn.Module):
     def __init__(self, dim, shape):
         super().__init__()
@@ -2029,7 +1952,6 @@ class SqueezeAxialPositionalEmbedding(nn.Module):
         B, C, N = x.shape
         x = x + F.interpolate(self.pos_embed, size=(N), mode='linear', align_corners=False)
         return x
-
 
 
 class Sea_Attention(torch.nn.Module):
@@ -2070,55 +1992,61 @@ class Sea_Attention(torch.nn.Module):
     def forward(self, x):  # x (B,N,C)
         B, C, H, W = x.shape
 
-        q = self.to_q(x) # 生成query: (B,C,H,W)-->(B,C_qk,H,W)
-        k = self.to_k(x) # 生成key: (B,C,H,W)-->(B,C_qk,H,W)
-        v = self.to_v(x) # 生成value: (B,C,H,W)-->(B,C_v,H,W)
+        q = self.to_q(x)  # 生成query: (B,C,H,W)-->(B,C_qk,H,W)
+        k = self.to_k(x)  # 生成key: (B,C,H,W)-->(B,C_qk,H,W)
+        v = self.to_v(x)  # 生成value: (B,C,H,W)-->(B,C_v,H,W)
 
         # Detail enhancement kernel
-        qkv = torch.cat([q, k, v], dim=1) # 将qkv拼接: (B,2*C_qk+C_v,H,W)
-        qkv = self.act(self.dwconv(qkv)) # 执行3×3卷积,建模局部空间依赖,从而增强局部细节感知: (B,2*C_qk+C_v,H,W)-->(B,2*C_qk+C_v,H,W)
-        qkv = self.pwconv(qkv) # 执行1×1卷积,将通道数量从(2*C_qk+C_v)映射到C,从而生成细节增强特征: (B,2C_qk+C_v,H,W)-->(B,C,H,W)
+        qkv = torch.cat([q, k, v], dim=1)  # 将qkv拼接: (B,2*C_qk+C_v,H,W)
+        qkv = self.act(self.dwconv(qkv))  # 执行3×3卷积,建模局部空间依赖,从而增强局部细节感知: (B,2*C_qk+C_v,H,W)-->(B,2*C_qk+C_v,H,W)
+        qkv = self.pwconv(qkv)  # 执行1×1卷积,将通道数量从(2*C_qk+C_v)映射到C,从而生成细节增强特征: (B,2C_qk+C_v,H,W)-->(B,C,H,W)
 
         # squeeze axial attention
         ## squeeze row, squeeze操作将全局信息保留到单个轴上，然后分别应用自注意力建模对应轴的长期依赖
-        qrow = self.pos_emb_rowq(q.mean(-1)).reshape(B, self.num_heads, -1, H).permute(0, 1, 3, 2) #通过平均池化压缩水平方向,并为垂直方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,H)-->reshape-->(B,h,d,H)-->permute-->(B,h,H,d);   C_qk=h*d, h:注意力头的个数；d:每个注意力头的通道数
-        krow = self.pos_emb_rowk(k.mean(-1)).reshape(B, self.num_heads, -1, H) #通过平均池化压缩水平方向,并为垂直方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,H)-->reshape-->(B,h,d,H)
-        vrow = v.mean(-1).reshape(B, self.num_heads, -1, H).permute(0, 1, 3, 2) #通过平均池化压缩水平方向: (B,C_v,H,W)-->mean-->(B,C_v,H)-->reshape-->(B,h,d_v,H)-->permute-->(B,h,H,d_v);   C_v=h*d_v, h:注意力头的个数；d_v:Value矩阵中每个注意力头的通道数
+        qrow = self.pos_emb_rowq(q.mean(-1)).reshape(B, self.num_heads, -1, H).permute(0, 1, 3,
+                                                                                       2)  # 通过平均池化压缩水平方向,并为垂直方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,H)-->reshape-->(B,h,d,H)-->permute-->(B,h,H,d);   C_qk=h*d, h:注意力头的个数；d:每个注意力头的通道数
+        krow = self.pos_emb_rowk(k.mean(-1)).reshape(B, self.num_heads, -1,
+                                                     H)  # 通过平均池化压缩水平方向,并为垂直方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,H)-->reshape-->(B,h,d,H)
+        vrow = v.mean(-1).reshape(B, self.num_heads, -1, H).permute(0, 1, 3,
+                                                                    2)  # 通过平均池化压缩水平方向: (B,C_v,H,W)-->mean-->(B,C_v,H)-->reshape-->(B,h,d_v,H)-->permute-->(B,h,H,d_v);   C_v=h*d_v, h:注意力头的个数；d_v:Value矩阵中每个注意力头的通道数
 
         attn_row = torch.matmul(qrow, krow) * self.scale  # 计算水平方向压缩之后的自注意力机制：(B,h,H,d) @ (B,h,d,H) = (B,h,H,H)
-        attn_row = attn_row.softmax(dim=-1) # 执行softmax操作
+        attn_row = attn_row.softmax(dim=-1)  # 执行softmax操作
         xx_row = torch.matmul(attn_row, vrow)  # 对Value进行加权求和: (B,h,H,H) @ (B,h,H,d_v) = (B,h,H,d_v)
-        xx_row = self.proj_encode_row(xx_row.permute(0, 1, 3, 2).reshape(B, self.dh, H, 1)) # 对注意力机制的输出进行reshape操作,并进行卷积：(B,h,H,d_v)-->permute-->(B,h,d_v,H)-->reshape-->(B,C_v,H,1);   C_v=h*d_v
+        xx_row = self.proj_encode_row(xx_row.permute(0, 1, 3, 2).reshape(B, self.dh, H,
+                                                                         1))  # 对注意力机制的输出进行reshape操作,并进行卷积：(B,h,H,d_v)-->permute-->(B,h,d_v,H)-->reshape-->(B,C_v,H,1);   C_v=h*d_v
 
         ## squeeze column
-        qcolumn = self.pos_emb_columnq(q.mean(-2)).reshape(B, self.num_heads, -1, W).permute(0, 1, 3, 2) # 通过平均池化压缩垂直方向,并为水平方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,W)-->reshape-->(B,h,d,W)-->permute-->(B,h,W,d);  C_qk=h*d, h:注意力头的个数；d:每个注意力头的通道数
-        kcolumn = self.pos_emb_columnk(k.mean(-2)).reshape(B, self.num_heads, -1, W) # 通过平均池化压缩垂直方向,并为水平方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,W)-->reshape-->(B,h,d,W)
-        vcolumn = v.mean(-2).reshape(B, self.num_heads, -1, W).permute(0, 1, 3, 2)  #通过平均池化压缩垂直方向: (B,C_v,H,W)-->mean-->(B,C_v,W)-->reshape-->(B,h,d_v,W)-->permute-->(B,h,W,d_v)
+        qcolumn = self.pos_emb_columnq(q.mean(-2)).reshape(B, self.num_heads, -1, W).permute(0, 1, 3,
+                                                                                             2)  # 通过平均池化压缩垂直方向,并为水平方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,W)-->reshape-->(B,h,d,W)-->permute-->(B,h,W,d);  C_qk=h*d, h:注意力头的个数；d:每个注意力头的通道数
+        kcolumn = self.pos_emb_columnk(k.mean(-2)).reshape(B, self.num_heads, -1,
+                                                           W)  # 通过平均池化压缩垂直方向,并为水平方向的空间位置添加位置嵌入: (B,C_qk,H,W)-->mean-->(B,C_qk,W)-->reshape-->(B,h,d,W)
+        vcolumn = v.mean(-2).reshape(B, self.num_heads, -1, W).permute(0, 1, 3,
+                                                                       2)  # 通过平均池化压缩垂直方向: (B,C_v,H,W)-->mean-->(B,C_v,W)-->reshape-->(B,h,d_v,W)-->permute-->(B,h,W,d_v)
 
-        attn_column = torch.matmul(qcolumn, kcolumn) * self.scale # 计算垂直方向压缩之后的自注意力机制：(B,h,W,d) @ (B,h,d,W) = (B,h,W,W)
-        attn_column = attn_column.softmax(dim=-1) # 执行softmax操作
+        attn_column = torch.matmul(qcolumn, kcolumn) * self.scale  # 计算垂直方向压缩之后的自注意力机制：(B,h,W,d) @ (B,h,d,W) = (B,h,W,W)
+        attn_column = attn_column.softmax(dim=-1)  # 执行softmax操作
         xx_column = torch.matmul(attn_column, vcolumn)  # 对Value进行加权求和: (B,h,W,W) @ (B,h,W,d_v) = (B,h,W,d_v)
-        xx_column = self.proj_encode_column(xx_column.permute(0, 1, 3, 2).reshape(B, self.dh, 1, W)) # 对注意力机制的输出进行reshape操作,并进行卷积：(B,h,W,d_v)-->permute-->(B,h,d_v,W)-->reshape-->(B,C_v,1,W);  C_v=h*d_v
+        xx_column = self.proj_encode_column(xx_column.permute(0, 1, 3, 2).reshape(B, self.dh, 1,
+                                                                                  W))  # 对注意力机制的输出进行reshape操作,并进行卷积：(B,h,W,d_v)-->permute-->(B,h,d_v,W)-->reshape-->(B,C_v,1,W);  C_v=h*d_v
 
-        xx = xx_row.add(xx_column) # 将两个注意力机制的输出进行相加,这是一种broadcast操作: (B,C_v,H,1) + (B,C_v,1,W) =(B,C_v,H,W)
-        xx = v.add(xx) # 添加残差连接
-        xx = self.proj(xx) # 应用1×1Conv得到Squeeze Axial attention的输出
+        xx = xx_row.add(xx_column)  # 将两个注意力机制的输出进行相加,这是一种broadcast操作: (B,C_v,H,1) + (B,C_v,1,W) =(B,C_v,H,W)
+        xx = v.add(xx)  # 添加残差连接
+        xx = self.proj(xx)  # 应用1×1Conv得到Squeeze Axial attention的输出
         xx = xx.sigmoid() * qkv  # 为Squeeze Axial attention的输出应用门控机制获得权重, 然后与Detail enhancement kernel的输出进行逐点乘法
         return xx
 
 
 if __name__ == '__main__':
     # (B,C,H,W)
-    input=torch.randn(1,512,7,7)
+    input = torch.randn(1, 512, 7, 7)
     Model = Sea_Attention(dim=512, key_dim=64, num_heads=8)
-    output=Model(input)
+    output = Model(input)
     print(output.shape)
 
 
 
 ```
-
-
 
 # 15、CoTAttention模块
 
@@ -2126,9 +2054,8 @@ if __name__ == '__main__':
 
 ### 1、作用
 
-Contextual Transformer（CoT）网络旨在通过利用输入键之间的上下文信息来引导动态注意力矩阵的学习，从而增强视觉识别任务中的视觉表示能力。通过在不同的尺度上捕捉丰富的上下文依赖性，CoT块能够更有效地捕获图像的局部和全局信息，提高模型对图像特征的理解能力。
-
-
+Contextual
+Transformer（CoT）网络旨在通过利用输入键之间的上下文信息来引导动态注意力矩阵的学习，从而增强视觉识别任务中的视觉表示能力。通过在不同的尺度上捕捉丰富的上下文依赖性，CoT块能够更有效地捕获图像的局部和全局信息，提高模型对图像特征的理解能力。
 
 ### 2、机制
 
@@ -2138,9 +2065,8 @@ Contextual Transformer（CoT）网络旨在通过利用输入键之间的上下�
 
 2、**CoT网络**：
 
-通过在ResNet架构中替换每个3x3卷积，使用CoT块构建了名为Contextual Transformer Networks（CoT-Net）的Transformer风格的骨干网络。CoT-Net通过在不同层次上整合上下文信息和自注意力学习，形成了一个强大的视觉识别模型。
-
-
+通过在ResNet架构中替换每个3x3卷积，使用CoT块构建了名为Contextual Transformer
+Networks（CoT-Net）的Transformer风格的骨干网络。CoT-Net通过在不同层次上整合上下文信息和自注意力学习，形成了一个强大的视觉识别模型。
 
 ### 3、独特优势
 
@@ -2156,8 +2082,6 @@ CoT网络通过在自注意力机制中整合键之间的上下文信息，提�
 
 CoT网络可以轻松地集成到现有的ResNet架构中，并且在图像识别、对象检测和实例分割等多个视觉识别任务中表现出良好的泛化能力，证明了其作为一个强大骨干网络的潜力。
 
-
-
 ### 4、代码
 
 ```python
@@ -2165,6 +2089,7 @@ CoT网络可以轻松地集成到现有的ResNet架构中，并且在图像识�
 import torch
 from torch import nn
 from torch.nn import functional as F
+
 
 class CoTAttention(nn.Module):
     # 初始化CoT注意力模块
@@ -2175,7 +2100,7 @@ class CoTAttention(nn.Module):
 
         # 定义用于键(key)的卷积层，包括一个分组卷积，BatchNorm和ReLU激活
         self.key_embed = nn.Sequential(
-            nn.Conv2d(dim, dim, kernel_size=kernel_size, padding=kernel_size//2, groups=4, bias=False),
+            nn.Conv2d(dim, dim, kernel_size=kernel_size, padding=kernel_size // 2, groups=4, bias=False),
             nn.BatchNorm2d(dim),
             nn.ReLU()
         )
@@ -2190,10 +2115,10 @@ class CoTAttention(nn.Module):
         factor = 4
         # 定义注意力嵌入层，由两个卷积层、一个BatchNorm层和ReLU激活组成
         self.attention_embed = nn.Sequential(
-            nn.Conv2d(2*dim, 2*dim//factor, 1, bias=False),
-            nn.BatchNorm2d(2*dim//factor),
+            nn.Conv2d(2 * dim, 2 * dim // factor, 1, bias=False),
+            nn.BatchNorm2d(2 * dim // factor),
             nn.ReLU(),
-            nn.Conv2d(2*dim//factor, kernel_size*kernel_size*dim, 1)
+            nn.Conv2d(2 * dim // factor, kernel_size * kernel_size * dim, 1)
         )
 
     def forward(self, x):
@@ -2204,12 +2129,13 @@ class CoTAttention(nn.Module):
 
         y = torch.cat([k1, x], dim=1)  # 将键的静态表示和原始输入连接
         att = self.attention_embed(y)  # 生成动态注意力权重
-        att = att.reshape(bs, c, self.kernel_size*self.kernel_size, h, w)
+        att = att.reshape(bs, c, self.kernel_size * self.kernel_size, h, w)
         att = att.mean(2, keepdim=False).view(bs, c, -1)  # 计算注意力权重的均值并调整形状
         k2 = F.softmax(att, dim=-1) * v  # 应用注意力权重到值上
         k2 = k2.view(bs, c, h, w)  # 调整形状以匹配输出
 
         return k1 + k2  # 返回键的静态和动态表示的总和
+
 
 # 实例化CoTAttention模块并测试
 if __name__ == '__main__':
@@ -2220,17 +2146,17 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 16、EMSA模块
 
 论文《ResT: An Efficient Transformer for Visual Recognition》
 
 ### 1、作用
 
-ResT是一种高效的多尺度视觉Transformer，作为图像识别领域的通用骨架。与现有的Transformer方法相比，ResT在处理不同分辨率的原始图像时具有多个优点：(1) 构建了一个内存高效的多头自注意力机制，通过简单的深度卷积来压缩内存，并在保持多头注意力的多样性能力的同时，跨注意力头维度进行交互；(2) 位置编码被设计为空间注意力，更加灵活，可以处理任意大小的输入图像，而无需插值或微调；(3) 与在每个阶段开始时直接对原始图像进行分块（tokenization）不同，设计了将分块嵌入作为一系列重叠卷积操作的堆栈，实现了更有效的特征提取。
-
-
+ResT是一种高效的多尺度视觉Transformer，作为图像识别领域的通用骨架。与现有的Transformer方法相比，ResT在处理不同分辨率的原始图像时具有多个优点：(
+1)
+构建了一个内存高效的多头自注意力机制，通过简单的深度卷积来压缩内存，并在保持多头注意力的多样性能力的同时，跨注意力头维度进行交互；(
+2) 位置编码被设计为空间注意力，更加灵活，可以处理任意大小的输入图像，而无需插值或微调；(3)
+与在每个阶段开始时直接对原始图像进行分块（tokenization）不同，设计了将分块嵌入作为一系列重叠卷积操作的堆栈，实现了更有效的特征提取。
 
 ### 2、机制
 
@@ -2246,8 +2172,6 @@ ResT采用位置编码作为空间注意力，使模型能够灵活地处理不�
 
 通过设计分块嵌入为重叠卷积操作的堆栈，ResT在不同阶段有效地提取特征，创建了多尺度的特征金字塔。
 
-
-
 ### 3、独特优势
 
 1、**高效和灵活性**：
@@ -2262,8 +2186,6 @@ ResT通过引入压缩的多头自注意力机制和空间注意力的位置编�
 
 ResT作为一个通用骨架，在图像分类和下游任务（如对象检测和实例分割）上展现了卓越的性能，证明了其作为强大骨架网络的潜力。
 
-
-
 ### 4、代码
 
 ```python
@@ -2272,6 +2194,7 @@ import torch
 from torch import nn
 from torch.nn import init
 
+
 # EMSA模块，为多尺度注意力机制的实现
 class EMSA(nn.Module):
 
@@ -2279,15 +2202,15 @@ class EMSA(nn.Module):
 
         super(EMSA, self).__init__()
         # 初始化参数和层
-        self.H = H# 输入特征图的高度
-        self.W = W# 输入特征图的宽度
-        self.fc_q = nn.Linear(d_model, h * d_k)# 查询向量的全连接层
-        self.fc_k = nn.Linear(d_model, h * d_k) # 键向量的全连接层
-        self.fc_v = nn.Linear(d_model, h * d_v)# 值向量的全连接层
-        self.fc_o = nn.Linear(h * d_v, d_model)# 输出的全连接层
-        self.dropout = nn.Dropout(dropout)# Dropout层
+        self.H = H  # 输入特征图的高度
+        self.W = W  # 输入特征图的宽度
+        self.fc_q = nn.Linear(d_model, h * d_k)  # 查询向量的全连接层
+        self.fc_k = nn.Linear(d_model, h * d_k)  # 键向量的全连接层
+        self.fc_v = nn.Linear(d_model, h * d_v)  # 值向量的全连接层
+        self.fc_o = nn.Linear(h * d_v, d_model)  # 输出的全连接层
+        self.dropout = nn.Dropout(dropout)  # Dropout层
 
-        self.ratio = ratio # 空间降采样比例
+        self.ratio = ratio  # 空间降采样比例
         if (self.ratio > 1):
             # 如果空间降采样比例大于1，则添加空间降采样层
             self.sr = nn.Sequential()
@@ -2369,17 +2292,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 17、ExternalAttention模块
 
 论文《Beyond Self-attention: External Attention using Two Linear Layers for Visual Tasks》
 
 ### 1、作用
 
-本文提出了一种新颖的注意力机制——外部注意力（External Attention），通过使用两个外部小型可学习的共享内存来实现。这种机制能够用两个连续的线性层和两个归一化层简单实现，并且可以方便地替换现有流行架构中的自注意力机制。外部注意力具有线性复杂度，并且隐式地考虑了所有数据样本之间的关联性，为图像分类、目标检测、语义分割、实例分割、图像生成以及点云分析等视觉任务提供了与自注意力机制相当或优于的性能，同时大幅降低了计算和内存成本。
-
-
+本文提出了一种新颖的注意力机制——外部注意力（External
+Attention），通过使用两个外部小型可学习的共享内存来实现。这种机制能够用两个连续的线性层和两个归一化层简单实现，并且可以方便地替换现有流行架构中的自注意力机制。外部注意力具有线性复杂度，并且隐式地考虑了所有数据样本之间的关联性，为图像分类、目标检测、语义分割、实例分割、图像生成以及点云分析等视觉任务提供了与自注意力机制相当或优于的性能，同时大幅降低了计算和内存成本。
 
 ### 2、机制
 
@@ -2395,8 +2315,6 @@ if __name__ == '__main__':
 
 通过引入多头机制，外部注意力能够捕获输入的不同方面的关系，增强了模型的表示能力。这种机制对于各种视觉任务都非常有效。
 
-
-
 ### 3、独特优势
 
 1、**高效且具有正则化作用**：
@@ -2411,8 +2329,6 @@ if __name__ == '__main__':
 
 由于其简单性，外部注意力可以轻松地集成到现有的基于自注意力的架构中，为各种视觉任务提供性能提升的同时，减少计算和存储开销。
 
-
-
 ### 4、代码
 
 ```python
@@ -2420,6 +2336,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
+
 
 # 定义外部注意力类，继承自nn.Module
 class ExternalAttention(nn.Module):
@@ -2464,6 +2381,7 @@ class ExternalAttention(nn.Module):
         out = self.mv(attn)  # 使用mv层将注意力特征映射回原始维度
         return out
 
+
 # 示例代码，创建一个ExternalAttention实例，并对一个随机输入进行处理
 if __name__ == '__main__':
     block = ExternalAttention(d_model=64, S=8).cuda()  # 实例化模型并移至CUDA设备
@@ -2473,8 +2391,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 18、PAM模块
 
 论文《Pyraformer: Low-Complexity Pyramidal Attention for Long-Range Time Series Modeling and Forecasting》
@@ -2482,8 +2398,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 Pyraformer通过利用时间序列的多分辨率表示，实现了对长期时间序列建模和预测的低复杂性解决方案。它引入了金字塔式注意力模块（PAM），该模块通过跨尺度的树状结构总结不同分辨率的特征，并通过内尺度的相邻连接模拟不同范围的时间依赖性。这种方法有效地捕获了长短期模式，对单步和多步长范围预测任务均表现出高精度，同时显著降低了时间和内存消耗。
-
-
 
 ### 2、机制
 
@@ -2499,13 +2413,12 @@ Pyraformer通过利用时间序列的多分辨率表示，实现了对长期时�
 
 根据下游任务的不同，采用不同的网络结构输出最终预测结果。对于单步预测，将历史序列的最后节点在所有尺度上聚合后进行预测；对于多步预测，提出了两种预测模块，一种是批量映射所有未来时间步，另一种是利用解码器基于完全注意力层进行预测。
 
-
-
 ### 3、独特优势
 
 1、**低时间和空间复杂度**：
 
-Pyraformer在序列长度L的情况下，实现了时间和空间复杂度的线性增长（O(L)），同时保持了信号传播路径的最大长度为常数（O(1)），这对于处理长时间序列尤其重要。
+Pyraformer在序列长度L的情况下，实现了时间和空间复杂度的线性增长（O(L)），同时保持了信号传播路径的最大长度为常数（O(1)
+），这对于处理长时间序列尤其重要。
 
 2、**高预测精度**：
 
@@ -2515,8 +2428,6 @@ Pyraformer在序列长度L的情况下，实现了时间和空间复杂度的线
 
 通过金字塔图有效捕获长短期时间依赖性，并在不同分辨率上模拟时间序列的动态，提供了一种紧凑的表示方法来处理远距离位置之间的时间依赖性。
 
-
-
 ### 4、代码
 
 ```python
@@ -2525,6 +2436,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import math
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -2559,7 +2471,7 @@ def get_mask(input_size, window_size, inner_size, device):
         start = sum(all_size[:layer_idx])
         for i in range(start, start + all_size[layer_idx]):
             left_side = (start - all_size[layer_idx - 1]) + (i - start) * window_size[layer_idx - 1]
-            if i == ( start + all_size[layer_idx] - 1):
+            if i == (start + all_size[layer_idx] - 1):
                 right_side = start
             else:
                 right_side = (start - all_size[layer_idx - 1]) + (i - start + 1) * window_size[layer_idx - 1]
@@ -2572,7 +2484,6 @@ def get_mask(input_size, window_size, inner_size, device):
     return mask, all_size
 
 
-
 class ConvLayer(nn.Module):
     def __init__(self, c_in, window_size):
         super(ConvLayer, self).__init__()
@@ -2581,6 +2492,7 @@ class ConvLayer(nn.Module):
                                   kernel_size=[1, window_size],
                                   stride=[1, window_size])
         torch.nn.init.xavier_uniform_(self.downConv.weight)
+
     def forward(self, x):
         # (B,T,N,D)-> (B, D, N, T)
         x = x.permute(0, 3, 2, 1)
@@ -2591,6 +2503,7 @@ class ConvLayer(nn.Module):
 
 class Conv_Construct(nn.Module):
     """Convolution CSCM"""
+
     def __init__(self, d_model, window_size):
         super(Conv_Construct, self).__init__()
         if not isinstance(window_size, list):
@@ -2598,13 +2511,13 @@ class Conv_Construct(nn.Module):
                 ConvLayer(d_model, window_size),
                 ConvLayer(d_model, window_size),
                 ConvLayer(d_model, window_size)
-                ])
+            ])
         else:
             self.conv_layers = nn.ModuleList([
                 ConvLayer(d_model, window_size[0]),
                 ConvLayer(d_model, window_size[1]),
                 ConvLayer(d_model, window_size[2])
-                ])
+            ])
         self.norm = nn.LayerNorm(d_model)
 
     def forward(self, enc_input):
@@ -2613,10 +2526,12 @@ class Conv_Construct(nn.Module):
         all_inputs.append(enc_input)  # 先把初始输入放进列表内
 
         for i in range(len(self.conv_layers)):
-            enc_input = self.conv_layers[i](enc_input)  # 以卷积核[2,2,2]为例: 1th conv: (B,T,N,D)-->(B,T/2,N,D); 2th conv: (B,T/2,N,D)-->(B,T/4,N,D); 3th conv: (B,T/4,N,D)-->(B,T/8,N,D)
+            enc_input = self.conv_layers[i](
+                enc_input)  # 以卷积核[2,2,2]为例: 1th conv: (B,T,N,D)-->(B,T/2,N,D); 2th conv: (B,T/2,N,D)-->(B,T/4,N,D); 3th conv: (B,T/4,N,D)-->(B,T/8,N,D)
             all_inputs.append(enc_input)
 
-        all_inputs = torch.cat(all_inputs, dim=1) # 在时间维度上拼接多尺度的序列: (B,T,N,D) + (B,T/2,N,D) + (B,T/4,N,D) + (B,T/8,N,D) = (B,M,N,D);  令M=T+T/2+T/4+T/8
+        all_inputs = torch.cat(all_inputs,
+                               dim=1)  # 在时间维度上拼接多尺度的序列: (B,T,N,D) + (B,T/2,N,D) + (B,T/4,N,D) + (B,T/8,N,D) = (B,M,N,D);  令M=T+T/2+T/4+T/8
         all_inputs = self.norm(all_inputs)
 
         return all_inputs
@@ -2633,48 +2548,50 @@ class MultiHeadAttention(nn.Module):
         self.d = d_k
         self.K = n_head
         self.mask = True
-        self.FC_q = nn.Linear(D,D)
-        self.FC_k = nn.Linear(D,D)
-        self.FC_v = nn.Linear(D,D)
-        self.FC = nn.Linear(D,D)
+        self.FC_q = nn.Linear(D, D)
+        self.FC_k = nn.Linear(D, D)
+        self.FC_v = nn.Linear(D, D)
+        self.FC = nn.Linear(D, D)
+
     def forward(self, q, k, v, mask=None):
         batch_size_ = q.shape[0]
 
-        query = self.FC_q(q) #生成q矩阵: (B,M,N,D)--> (B,M,N,D)
-        key = self.FC_k(k) #生成k矩阵: (B,M,N,D)--> (B,M,N,D)
-        value = self.FC_v(v) #生成v矩阵: (B,M,N,D)--> (B,M,N,D)
+        query = self.FC_q(q)  # 生成q矩阵: (B,M,N,D)--> (B,M,N,D)
+        key = self.FC_k(k)  # 生成k矩阵: (B,M,N,D)--> (B,M,N,D)
+        value = self.FC_v(v)  # 生成v矩阵: (B,M,N,D)--> (B,M,N,D)
 
         query = torch.cat(torch.split(query, self.d, dim=-1), dim=0)  # 划分为多头: (B,M,N,D)-->(B*k,M,N,d);  D=k*d
-        key = torch.cat(torch.split(key, self.d, dim=-1), dim=0)   # 划分为多头: (B,M,N,D)-->(B*k,M,N,d);  D=k*d
-        value = torch.cat(torch.split(value, self.d, dim=-1), dim=0)   #划分为多头:  (B,M,N,D)-->(B*k,M,N,d);  D=k*d
+        key = torch.cat(torch.split(key, self.d, dim=-1), dim=0)  # 划分为多头: (B,M,N,D)-->(B*k,M,N,d);  D=k*d
+        value = torch.cat(torch.split(value, self.d, dim=-1), dim=0)  # 划分为多头:  (B,M,N,D)-->(B*k,M,N,d);  D=k*d
 
         query = query.permute(0, 2, 1, 3)  # 进行变换,为了便于计算: (B*k,M,N,d)-->(B*k,N,M,d)
-        key = key.permute(0, 2, 3, 1)   # (B*k,M,N,d)-->(B*k,N,d,M)
-        value = value.permute(0, 2, 1, 3) # (B*k,M,N,d)-->(B*k,N,M,d)
+        key = key.permute(0, 2, 3, 1)  # (B*k,M,N,d)-->(B*k,N,d,M)
+        value = value.permute(0, 2, 1, 3)  # (B*k,M,N,d)-->(B*k,N,M,d)
 
-        attention = torch.matmul(query, key) # 得到注意力矩阵: (B*k,N,M,d) @ (B*k,N,d,M) = (B*k,N,M,M)
+        attention = torch.matmul(query, key)  # 得到注意力矩阵: (B*k,N,M,d) @ (B*k,N,d,M) = (B*k,N,M,M)
         attention /= (self.d ** 0.5)
 
         # 屏蔽掉注意力矩阵中那些没有连接的节点对
         if self.mask:
             num = torch.tensor(-2 ** 15 + 1)
             num = num.to(torch.float32).to(device)
-            attention = torch.where(mask, attention,num)  #  如果mask某元素是fasle,那么attention矩阵的对应位置应填入负无穷数值(即num),这样的话在执行softmax之后负无穷对应的位置应当趋近于0
+            attention = torch.where(mask, attention,
+                                    num)  # 如果mask某元素是fasle,那么attention矩阵的对应位置应填入负无穷数值(即num),这样的话在执行softmax之后负无穷对应的位置应当趋近于0
         # softmax
         attention = F.softmax(attention, dim=-1)
 
         # [batch_size, num_step, num_vertex, D]
-        X = torch.matmul(attention, value) # 通过注意力矩阵聚合对应节点的信息: (B*k,N,M,M) @ (B*k,N,M,d) = (B*k,N,M,d)
-        X = X.permute(0, 2, 1, 3) # (B*k,N,M,d)-->(B*k,M,N,d)
-        X = torch.cat(torch.split(X, batch_size_, dim=0), dim=-1)  # 在通道上拼接多头注意力的输出::(B*k,M,N,d)-->(B,M,N,k*d)==(B,M,N,D)
-        X = self.FC(X) # 通过映射层融合多个子空间的特征
-        return X[:, :self.all_size[0]] # 只选择原始序列的长度进行输出: (B,M,N,D)-->(B,T,N,D)
+        X = torch.matmul(attention, value)  # 通过注意力矩阵聚合对应节点的信息: (B*k,N,M,M) @ (B*k,N,M,d) = (B*k,N,M,d)
+        X = X.permute(0, 2, 1, 3)  # (B*k,N,M,d)-->(B*k,M,N,d)
+        X = torch.cat(torch.split(X, batch_size_, dim=0),
+                      dim=-1)  # 在通道上拼接多头注意力的输出::(B*k,M,N,d)-->(B,M,N,k*d)==(B,M,N,D)
+        X = self.FC(X)  # 通过映射层融合多个子空间的特征
+        return X[:, :self.all_size[0]]  # 只选择原始序列的长度进行输出: (B,M,N,D)-->(B,T,N,D)
 
 
 if __name__ == '__main__':
-
     # (B,T,N,D)  N:序列的个数, T:时间序列的长度;   注意: 输入长度是8,window_size=[2,2,2]; 如果输入长度是12,window_size=[2,2,3]; 确保除到最后一层长度为1: 8/2/2/2=1; 12/2/2/3=1;
-    X = torch.randn(1,8,1,64)
+    X = torch.randn(1, 8, 1, 64)
     seq_length = X.shape[1]
 
     # 得到金字塔的mask矩阵; 以输入序列长度等于8,三层卷积核分别为[2, 2, 2]为例子: all_size=[8,4,2,1],存放每一个尺度对应的序列长度
@@ -2684,13 +2601,10 @@ if __name__ == '__main__':
     # 定义多头注意力机制
     Model = MultiHeadAttention(n_head=8, d_model=64, d_k=8, dropout=0., normalize_before=False, all_size=all_size)
 
-
-    X = conv_layers(X) #执行粗尺度构造模块(B,T,N,D)-->(B,M,N,D)
-    output = Model(X, X, X, mask=mask) # 执行注意力机制： (B,M,N,D)--> (B,T,N,D)
+    X = conv_layers(X)  # 执行粗尺度构造模块(B,T,N,D)-->(B,M,N,D)
+    output = Model(X, X, X, mask=mask)  # 执行注意力机制： (B,M,N,D)--> (B,T,N,D)
     print(output.shape)
 ```
-
-
 
 # 19、SAFM模块
 
@@ -2698,21 +2612,19 @@ if __name__ == '__main__':
 
 ### 1、作用
 
-这篇论文通过提出空间自适应特征调制（Spatially-Adaptive Feature Modulation, SAFM）机制，旨在解决图像超分辨率（Super-Resolution, SR）的高效设计问题。在图像超分辨率重建性能上取得了显著的成果，这些模型通常具有大型复杂的架构，不适用于低功耗设备，限于计算和存储资源。SAFM层通过独立计算学习多尺度特征表示，并动态聚合这些特征进行空间调制，克服了这些挑战。
-
-
+这篇论文通过提出空间自适应特征调制（Spatially-Adaptive Feature Modulation, SAFM）机制，旨在解决图像超分辨率（Super-Resolution,
+SR）的高效设计问题。在图像超分辨率重建性能上取得了显著的成果，这些模型通常具有大型复杂的架构，不适用于低功耗设备，限于计算和存储资源。SAFM层通过独立计算学习多尺度特征表示，并动态聚合这些特征进行空间调制，克服了这些挑战。
 
 ### 2、机制
 
 1、**空间自适应特征调制（SAFM）层**：
 
-SAFM层利用多尺度特征表示独立学习，并动态进行空间调制。SAFM着重于利用非局部特征依赖性，进一步引入卷积通道混合器（Convolutional Channel Mixer, CCM），以编码局部上下文信息并同时混合通道。
+SAFM层利用多尺度特征表示独立学习，并动态进行空间调制。SAFM着重于利用非局部特征依赖性，进一步引入卷积通道混合器（Convolutional
+Channel Mixer, CCM），以编码局部上下文信息并同时混合通道。
 
 2、**卷积通道混合器（CCM）**：
 
 为了补充局部上下文信息，提出了基于FMBConv的CCM，用于编码局部特征并混合通道，增强了模型处理特征的能力。
-
-
 
 ### 3、独特优势
 
@@ -2728,14 +2640,13 @@ SAFMN模型相比于现有的高效SR方法小3倍，如IMDN等，同时以更�
 
 通过SAFM层和CCM的结合，SAFMN有效整合了局部和非局部特征信息，实现了更精准的图像超分辨率重建。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 
 # 定义SAFM类，继承自nn.Module
 class SAFM(nn.Module):
@@ -2747,7 +2658,8 @@ class SAFM(nn.Module):
         chunk_dim = dim // n_levels
 
         # Spatial Weighting：针对每个尺度的特征，使用深度卷积进行空间加权
-        self.mfr = nn.ModuleList([nn.Conv2d(chunk_dim, chunk_dim, 3, 1, 1, groups=chunk_dim) for i in range(self.n_levels)])
+        self.mfr = nn.ModuleList(
+            [nn.Conv2d(chunk_dim, chunk_dim, 3, 1, 1, groups=chunk_dim) for i in range(self.n_levels)])
 
         # Feature Aggregation：用于聚合不同尺度处理过的特征
         self.aggr = nn.Conv2d(dim, dim, 1, 1, 0)
@@ -2766,7 +2678,7 @@ class SAFM(nn.Module):
         for i in range(self.n_levels):
             if i > 0:
                 # 计算每个尺度下采样后的大小
-                p_size = (h // 2**i, w // 2**i)
+                p_size = (h // 2 ** i, w // 2 ** i)
                 # 对特征进行自适应最大池化，降低分辨率
                 s = F.adaptive_max_pool2d(xc[i], p_size)
                 # 对降低分辨率的特征应用深度卷积
@@ -2786,6 +2698,7 @@ class SAFM(nn.Module):
         out = self.act(out) * x
         return out
 
+
 if __name__ == '__main__':
     # 创建一个SAFM实例并对一个随机输入进行处理
     x = torch.randn(1, 36, 224, 224)
@@ -2795,8 +2708,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 20、EfficientAdditiveAttnetion模块
 
 论文《SwiftFormer: Efficient Additive Attention for Transformer-based Real-time Mobile Vision Applications》
@@ -2804,8 +2715,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 SwiftFormer通过引入高效的加性注意力机制，解决了在移动设备上实时运行视觉应用时自注意力的高计算复杂性问题。这种机制通过线性的元素级乘法替换了传统的自注意力中的二次矩阵乘法操作，显著减少了计算复杂性，使得模型能够在资源受限的移动设备上高效运行，同时保持高准确率。
-
-
 
 ### 2、机制
 
@@ -2816,8 +2725,6 @@ SwiftFormer通过引入高效的加性注意力机制，解决了在移动设备
 2、**全局上下文的计算**：
 
 通过仅利用查询（query）-键（key）交互和一个线性变换来计算全局上下文，避免了昂贵的矩阵乘法操作，使得模型在所有网络阶段都能使用提出的注意力块。
-
-
 
 ### 3、独特优势
 
@@ -2833,8 +2740,6 @@ SwiftFormer通过引入高效的加性注意力机制，解决了在移动设备
 
 SwiftFormer在图像分类、目标检测、实例分割等多个任务上达到了最新的性能，特别是在移动设备上的推理速度和准确率方面，显著超越了现有的MobileViT-v2和EfficientFormer模型。
 
-
-
 ### 4、代码
 
 ```python
@@ -2844,6 +2749,7 @@ import torch.nn.functional as F
 import numpy as np
 import math
 import einops
+
 
 # 定义高效加性注意力模块
 class EfficientAdditiveAttnetion(nn.Module):
@@ -2893,6 +2799,7 @@ class EfficientAdditiveAttnetion(nn.Module):
 
         return out
 
+
 if __name__ == '__main__':
     # 示例：对一个形状为[B, N, D]的随机张量应用高效加性注意力模块
     X = torch.randn(1, 50, 512)
@@ -2902,17 +2809,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 21、gam模块
 
 论文《Global Attention Mechanism: Retain Information to Enhance Channel-Spatial Interactions》
 
 ### 1、作用
 
-这篇论文提出了全局注意力机制（Global Attention Mechanism, GAM），旨在通过保留通道和空间方面的信息来增强跨维度交互，从而提升深度神经网络的性能。GAM通过引入3D排列与多层感知器（MLP）用于通道注意力，并辅以卷积空间注意力子模块，提高了图像分类任务的表现。该方法在CIFAR-100和ImageNet-1K数据集上的图像分类任务中均稳定地超越了几种最新的注意力机制，包括在ResNet和轻量级MobileNet模型上的应用。
-
-
+这篇论文提出了全局注意力机制（Global Attention Mechanism,
+GAM），旨在通过保留通道和空间方面的信息来增强跨维度交互，从而提升深度神经网络的性能。GAM通过引入3D排列与多层感知器（MLP）用于通道注意力，并辅以卷积空间注意力子模块，提高了图像分类任务的表现。该方法在CIFAR-100和ImageNet-1K数据集上的图像分类任务中均稳定地超越了几种最新的注意力机制，包括在ResNet和轻量级MobileNet模型上的应用。
 
 ### 2、机制
 
@@ -2923,8 +2827,6 @@ if __name__ == '__main__':
 2、**空间注意力子模块**：
 
 为了聚焦空间信息，使用了两个卷积层进行空间信息的融合。同时，为了进一步保留特征图，移除了池化操作。此外，为了避免参数数量显著增加，当应用于ResNet50时，采用了分组卷积与通道混洗。
-
-
 
 ### 3、独特优势
 
@@ -2940,13 +2842,12 @@ GAM展示了与现有的高效SR方法相比，如IMDN，其模型大小小了3�
 
 GAM通过其层和CCM的结合，有效地整合了局部和非局部特征信息，实现了更精确的图像超分辨率重建。
 
-
-
 ### 4、代码
 
 ```python
 import torch.nn as nn
 import torch
+
 
 class GAM_Attention(nn.Module):
     def __init__(self, in_channels, rate=4):
@@ -2990,6 +2891,7 @@ class GAM_Attention(nn.Module):
 
         return out
 
+
 # 示例代码：使用GAM_Attention对一个随机初始化的张量进行处理
 if __name__ == '__main__':
     x = torch.randn(1, 64, 20, 20)  # 随机生成输入张量
@@ -3000,17 +2902,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 22、PSA模块
 
 论文《EPSANet: An Efficient Pyramid Squeeze Attention Block on Convolutional Neural Network》
 
 ### 1、作用
 
-EPSANet通过引入高效的金字塔挤压注意力（Pyramid Squeeze Attention, PSA）模块，显著提升了深度卷积神经网络在图像分类、对象检测和实例分割等计算机视觉任务中的性能。通过在ResNet的瓶颈块中替换3x3卷积为PSA模块，EPSANet能够在不增加显著计算负担的情况下，提供更丰富的多尺度特征表示和更有效的通道空间交互。
-
-
+EPSANet通过引入高效的金字塔挤压注意力（Pyramid Squeeze Attention,
+PSA）模块，显著提升了深度卷积神经网络在图像分类、对象检测和实例分割等计算机视觉任务中的性能。通过在ResNet的瓶颈块中替换3x3卷积为PSA模块，EPSANet能够在不增加显著计算负担的情况下，提供更丰富的多尺度特征表示和更有效的通道空间交互。
 
 ### 2、机制
 
@@ -3026,13 +2925,12 @@ EPSANet通过引入高效的金字塔挤压注意力（Pyramid Squeeze Attention
 
 通过堆叠ResNet风格的EPSA块，开发了简单且高效的EPSANet骨干架构。EPSANet通过提出的PSA模块，为各种计算机视觉任务提供了更强的多尺度表示能力，并能够适应性地重新校准跨维度的通道注意力权重。
 
-
-
 ### 3、独特优势
 
 1、**性能提升**：
 
-相比于SENet-50，EPSANet在ImageNet数据集上的Top-1准确率提高了1.93%，在MS COCO数据集上，对象检测的box AP提高了2.7个百分点，实例分割的mask AP提高了1.7个百分点。
+相比于SENet-50，EPSANet在ImageNet数据集上的Top-1准确率提高了1.93%，在MS COCO数据集上，对象检测的box AP提高了2.7个百分点，实例分割的mask
+AP提高了1.7个百分点。
 
 2、**计算效率**：
 
@@ -3046,14 +2944,13 @@ EPSANet通过动态空间调制有效聚合了特征，提升了重建性能，�
 
 EPSANet通过PSA层和卷积通道混合器（CCM）的结合，有效整合了局部和非局部特征信息，实现了更精确的图像超分辨率重建。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 
 class PSA(nn.Module):
     def __init__(self, channel=512, reduction=4, S=4):
@@ -3105,6 +3002,7 @@ class PSA(nn.Module):
 
         return PSA_out
 
+
 if __name__ == '__main__':
     input = torch.randn(3, 512, 64, 64)
     psa = PSA(channel=512, reduction=4, S=4)
@@ -3113,8 +3011,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 23、HaLoAttention模块
 
 论文《Scaling Local Self-Attention for Parameter Efficient Visual Backbones》
@@ -3122,8 +3018,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 HaloNet通过引入Haloing机制和高效的注意力实现，在图像识别任务中达到了最先进的准确性。这些模型通过局部自注意力机制，有效地捕获像素间的全局交互，同时通过分块和Haloing策略，显著提高了处理速度和内存效率。
-
-
 
 ### 2、机制
 
@@ -3139,8 +3033,6 @@ HaloNet构建了多尺度特征层次结构，通过分层采样和跨尺度的�
 
 通过改进的自注意力算法，包括非中心化的局部注意力和分层自注意力下采样操作，HaloNet在保持高准确性的同时，提高了训练和推理速度。
 
-
-
 ### 3、独特优势
 
 1、**参数效率**：
@@ -3154,8 +3046,6 @@ HaloNet通过局部自注意力机制和Haloing策略，大幅度减少了所需
 3、**提升速度和效率**：
 
 通过优化的自注意力实现，HaloNet在不牺牲准确性的前提下，实现了比现有技术更快的训练和推理速度，使其更适合实际应用。
-
-
 
 ### 4、代码
 
@@ -3347,17 +3237,14 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 24、ViP模块
 
 论文《VISION PERMUTATOR: A PERMUTABLE MLP-LIKE ARCHITECTURE FOR VISUAL RECOGNITION》
 
 ### 1、作用
 
-论文提出的Vision Permutator是一种简单、数据高效的类MLP（多层感知机）架构，用于视觉识别。不同于其他MLP类模型，它通过线性投影分别对特征表示在高度和宽度维度进行编码，能够保留2D特征表示中的位置信息，有效捕获沿一个空间方向的长距离依赖关系，同时保留另一方向上的精确位置信息。
-
-
+论文提出的Vision
+Permutator是一种简单、数据高效的类MLP（多层感知机）架构，用于视觉识别。不同于其他MLP类模型，它通过线性投影分别对特征表示在高度和宽度维度进行编码，能够保留2D特征表示中的位置信息，有效捕获沿一个空间方向的长距离依赖关系，同时保留另一方向上的精确位置信息。
 
 ### 2、机制
 
@@ -3373,8 +3260,6 @@ Permutator块包含一个用于空间信息编码的Permute-MLP和一个用于�
 
 在简单的Permute-MLP基础上，引入加权Permute-MLP来重新校准不同分支的重要性，进一步提高模型性能。
 
-
-
 ### 3、独特优势
 
 1、**空间信息编码**：
@@ -3383,13 +3268,12 @@ Vision Permutator通过在高度和宽度维度上分别对特征进行编码，
 
 2、**性能提升**：
 
-实验表明，即使在不使用额外大规模训练数据的情况下，Vision Permutator也能达到81.5%的ImageNet顶级-1准确率，并且仅使用25M可学习参数，这比大多数同等大小模型的CNNs和视觉变换器都要好。
+实验表明，即使在不使用额外大规模训练数据的情况下，Vision
+Permutator也能达到81.5%的ImageNet顶级-1准确率，并且仅使用25M可学习参数，这比大多数同等大小模型的CNNs和视觉变换器都要好。
 
 3、**模型高效**：
 
 Vision Permutator的结构简单、数据高效，在确保高准确性的同时提高了训练和推理速度，展现了MLP类模型在视觉识别任务中的潜力。
-
-
 
 ### 4、代码
 
@@ -3467,10 +3351,8 @@ if __name__ == '__main__':
     vip = WeightedPermuteMLP(512, seg_dim)  # 初始化模型
     out = vip(input)  # 前向传播
     print(out.shape)
-    
+
 ```
-
-
 
 # 25、SKAttention模块
 
@@ -3480,13 +3362,9 @@ if __name__ == '__main__':
 
 该论文介绍了选择性核网络（SKNets），这是一种在卷积神经网络（CNN）中的动态选择机制，允许每个神经元根据输入自适应地调整其感受野大小。这种方法受到视觉皮层神经元对不同刺激响应时感受野大小变化的启发，在CNN设计中不常利用此特性。
 
-
-
 ### 2、机制
 
 SKNets利用了一个称为选择性核（SK）单元的构建模块，该模块包含具有不同核大小的多个分支。这些分支通过一个softmax注意力机制融合，由这些分支中的信息引导。这个融合过程使得神经元能够根据输入自适应地调整其有效感受野大小。
-
-
 
 ### 3、**独特优势**
 
@@ -3502,8 +3380,6 @@ SKNets中的神经元可以基于输入动态调整其感受野大小，模仿�
 
 在ImageNet和CIFAR等基准测试上的实验结果显示，SKNets在具有相似或更低模型复杂度的情况下，超过了其他最先进的架构。适应性调整感受野的能力可能有助于更有效地捕捉不同尺度的目标对象，提高识别性能。
 
-
-
 ### 4、代码
 
 ```python
@@ -3512,6 +3388,7 @@ import torch
 from torch import nn
 from torch.nn import init
 from collections import OrderedDict
+
 
 class SKAttention(nn.Module):
     def __init__(self, channel=512, kernels=[1, 3, 5, 7], reduction=16, group=1, L=32):
@@ -3564,6 +3441,7 @@ class SKAttention(nn.Module):
         V = (attention_weights * feats).sum(0)
         return V
 
+
 # 示例用法
 if __name__ == '__main__':
     input = torch.randn(50, 512, 7, 7)
@@ -3573,8 +3451,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 26、UFO模块
 
 论文《UFO-ViT: High Performance Linear Vision Transformer without Softmax》
@@ -3582,8 +3458,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 UFO-ViT旨在解决传统Transformer在视觉任务中所面临的主要挑战之一：SA机制的计算资源需求随输入尺寸的平方增长，这使得处理高分辨率输入变得不切实际。UFO-ViT通过提出一种新的SA机制，消除了非线性操作，实现了对计算复杂度的线性控制，同时保持了高性能。
-
-
 
 ### 2、机制
 
@@ -3594,8 +3468,6 @@ UFO-ViT通过消除softmax非线性，简化了自注意力机制。它采用简
 2、**跨标准化（XNorm）**：
 
 UFO-ViT引入了一种新的规范化方法——跨标准化（XNorm），用于替换softmax。这种方法将键和值的自注意力乘积直接相乘，并通过线性核方法生成聚类，以线性复杂度处理自注意力。
-
-
 
 ### 3、独特优势
 
@@ -3611,8 +3483,6 @@ UFO-ViT在图像分类和密集预测任务中的表现证明了其作为通用�
 
 UFO-ViT模型具有更快的推理速度，并且在各种分辨率下所需的GPU内存较少。特别是在处理高分辨率输入时，所需的计算资源并没有显著增加。
 
-
-
 ### 4、代码
 
 ```python
@@ -3622,10 +3492,12 @@ from torch import nn
 from torch.functional import norm
 from torch.nn import init
 
+
 # 定义XNorm函数，对输入x进行规范化
 def XNorm(x, gamma):
     norm_tensor = torch.norm(x, 2, -1, True)
     return x * gamma / norm_tensor
+
 
 # UFOAttention类继承自nn.Module
 class UFOAttention(nn.Module):
@@ -3692,6 +3564,7 @@ class UFOAttention(nn.Module):
 
         return out
 
+
 if __name__ == '__main__':
     # 示例用法
     block = UFOAttention(d_model=512, d_k=512, d_v=512, h=8).cuda()
@@ -3701,8 +3574,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 27、ASPP模块
 
 论文《Rethinking Atrous Convolution for Semantic Image Segmentation》
@@ -3711,13 +3582,10 @@ if __name__ == '__main__':
 
 DeepLabv3是一种先进的语义图像分割系统，它通过使用空洞卷积捕获多尺度上下文来显著提升性能，无需依赖DenseCRF后处理。
 
-
-
 ### 2、机制
 
-DeepLabv3的核心机制围绕空洞（扩张）卷积展开。这种技术允许模型控制滤波器的视野，使其能够在多个尺度上捕获空间上下文。DeepLabv3在串联和并联架构中使用空洞卷积来提取密集的特征图，并有效地整合多尺度信息。文章还介绍了Atrous Spatial Pyramid Pooling（ASPP）模块，该模块通过在多个尺度上探索卷积特征并结合图像级特征，用于编码全局上下文。
-
-
+DeepLabv3的核心机制围绕空洞（扩张）卷积展开。这种技术允许模型控制滤波器的视野，使其能够在多个尺度上捕获空间上下文。DeepLabv3在串联和并联架构中使用空洞卷积来提取密集的特征图，并有效地整合多尺度信息。文章还介绍了Atrous
+Spatial Pyramid Pooling（ASPP）模块，该模块通过在多个尺度上探索卷积特征并结合图像级特征，用于编码全局上下文。
 
 ### 3、独特优势
 
@@ -3736,8 +3604,6 @@ ASPP与图像级特征的结合显著提高了模型性能，使其在PASCAL VOC
 4、**灵活性和泛化能力**：
 
 DeepLabv3的框架是通用的，可以应用于任何网络架构，为适应不同的分割任务提供了灵活性。
-
-
 
 ### 4、代码
 
@@ -3820,8 +3686,6 @@ print(aspp(x).shape)  # 输出处理后的特征图维度
 
 ```
 
-
-
 # 28、ShuffleAttention模块
 
 论文《SA-NET: SHUFFLE ATTENTION FOR DEEP CONVOLUTIONAL NEURAL NETWORKS》
@@ -3829,8 +3693,6 @@ print(aspp(x).shape)  # 输出处理后的特征图维度
 ### 1、作用
 
 SA模块主要用于增强深度卷积网络在处理图像分类、对象检测和实例分割等任务时的性能。它通过在神经网络中引入注意力机制，使网络能够更加关注于图像中的重要特征，同时抑制不相关的信息。
-
-
 
 ### 2、机制
 
@@ -3845,8 +3707,6 @@ SA模块首先将输入特征图沿通道维度分成多个子特征组，这样
 3、**子特征聚合**：
 
 处理完毕后，所有子特征重新聚合，然后采用“通道混洗”操作以实现不同子特征间的信息交流。
-
-
 
 ### 3、独特优势
 
@@ -3865,8 +3725,6 @@ SA模块可以轻松集成到现有的CNN架构中，为各种视觉任务提供
 4、**广泛的适用性**：
 
 通过在多个标准数据集上的实验验证，SA模块在图像分类、对象检测和实例分割等任务上均取得了优于当前最先进方法的性能，显示了其优越的泛化能力。
-
-
 
 ### 4、代码
 
@@ -3952,8 +3810,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 29、ResNeSt模块
 
 论文《ResNeSt: Split-Attention Networks》
@@ -3962,15 +3818,11 @@ if __name__ == '__main__':
 
 ResNeSt提出了一种新的模块化分裂注意力（Split-Attention）块，通过在特征图组间实现注意力机制。通过堆叠这些分裂注意力块，以ResNet风格构建，形成了新的ResNet变体，即ResNeSt。该网络保留了整体的ResNet结构，便于在不增加额外计算成本的情况下，直接用于下游任务。
 
-
-
 ### 2、**机制**
 
 1、ResNeSt通过分裂注意力块对特征图组进行处理，使得每个组的特征表示通过其子组的加权组合得到，权重基于全局上下文信息。这种方法有效地增强了跨通道信息的交互，从而获得更丰富的特征表示。
 
 2、分裂注意力块包括特征图分组和分裂注意力两个操作。首先将输入特征图分为多个组（卡片），然后在每个卡片内进一步细分为若干子组（基数），通过学习得到的权重对这些子组进行加权和，以获得每个卡片的表示，最后将所有卡片的表示合并起来，形成块的输出。
-
-
 
 ### 3、**独特优势**
 
@@ -3978,14 +3830,13 @@ ResNeSt提出了一种新的模块化分裂注意力（Split-Attention）块，�
 
 2、通过简单替换ResNet-50背骨为ResNeSt-50，即可在MS-COCO上将Faster-RCNN的mAP从39.3%提高到42.3%，并将ADE20K上DeeplabV3的mIoU从42.1%提高到45.1% 。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 from torch import nn
 import torch.nn.functional as F
+
 
 # 用于调整数值，使其可以被某个除数整除，常用于网络层中通道数的设置。
 def make_divisible(v, divisor=8, min_value=None, round_limit=.9):
@@ -3995,6 +3846,7 @@ def make_divisible(v, divisor=8, min_value=None, round_limit=.9):
     if new_v < round_limit * v:
         new_v += divisor
     return new_v
+
 
 # Radix Softmax用于处理分组特征的归一化
 class RadixSoftmax(nn.Module):
@@ -4013,6 +3865,7 @@ class RadixSoftmax(nn.Module):
         else:
             x = x.sigmoid()
         return x
+
 
 # SplitAttn模块实现分裂注意力机制
 class SplitAttn(nn.Module):
@@ -4075,7 +3928,6 @@ class SplitAttn(nn.Module):
         return out
 
 
-
 # 输入 N C H W,  输出 N C H W
 if __name__ == '__main__':
     block = SplitAttn(64)
@@ -4085,8 +3937,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 30、Partnet模块
 
 论文《NON-DEEP NETWORKS》
@@ -4095,15 +3945,12 @@ if __name__ == '__main__':
 
 论文提出了“Partnet”，这是一种新型的神经网络架构，旨在不依赖传统的深层架构就能在视觉识别任务中达到高性能。展示了在大规模基准测试如ImageNet、CIFAR-10和CIFAR-100上，即便是层数大大减少（大约12层）的网络也能够保持竞争力。
 
-
-
 ### 2、机制
 
 1、Partnet采用并行子网络而不是传统的顺序层叠，从而减少了网络深度，同时保持或甚至增强了性能。这种“不尴不尬的并行”设计使得在不妥协模型学习复杂特征的能力下有效减少了计算深度。
 
-2、该架构通过改良的VGG风格块，加入了跳跃连接、压缩和激励（Skip-Squeeze-and-Excitation, SSE）层，并使用了SiLU（Sigmoid Linear Unit）激活函数，以解决由于深度减少可能导致的表示能力限制问题。
-
-
+2、该架构通过改良的VGG风格块，加入了跳跃连接、压缩和激励（Skip-Squeeze-and-Excitation, SSE）层，并使用了SiLU（Sigmoid Linear
+Unit）激活函数，以解决由于深度减少可能导致的表示能力限制问题。
 
 ### 3、独特优势
 
@@ -4118,8 +3965,6 @@ Partnet的并行结构允许有效地将计算分布在多个处理单元上，�
 3、**可扩展性**：
 
 论文探索了如何通过增加宽度、分辨率和并行分支的数量来扩展Partnet，同时保持网络深度恒定。这种可扩展方法为进一步提高性能提供了路径，而不增加延迟
-
-
 
 ### 4、代码
 
@@ -4174,17 +4019,15 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 31、Cloattention模块
 
 论文《Rethinking Local Perception in Lightweight Vision Transformer》
 
 ### 1、作用
 
-CloFormer（Context-aware Local Enhancement Vision Transformer）是一种轻量级的视觉Transformer，用于在保持模型轻量化的同时，提高在各种视觉任务中的性能，包括图像分类、目标检测和语义分割。其主要目的是提升移动设备上的视觉模型性能，克服直接缩减标准ViT（Vision Transformer）模型尺寸导致的性能下降问题。
-
-
+CloFormer（Context-aware Local Enhancement Vision
+Transformer）是一种轻量级的视觉Transformer，用于在保持模型轻量化的同时，提高在各种视觉任务中的性能，包括图像分类、目标检测和语义分割。其主要目的是提升移动设备上的视觉模型性能，克服直接缩减标准ViT（Vision
+Transformer）模型尺寸导致的性能下降问题。
 
 ### 2、机制
 
@@ -4192,13 +4035,12 @@ CloFormer通过引入AttnConv（Attention Style Convolution Operator）来实现
 
 1、**局部分支**：
 
-利用AttnConv融合共享权重和上下文感知权重来聚合高频局部信息。首先，使用深度可分离卷积（Depthwise Convolution，DWconv）提取局部表示，然后部署上下文感知权重来增强局部特征。
+利用AttnConv融合共享权重和上下文感知权重来聚合高频局部信息。首先，使用深度可分离卷积（Depthwise
+Convolution，DWconv）提取局部表示，然后部署上下文感知权重来增强局部特征。
 
 2、**全局分支**：
 
 采用标准的注意力机制，通过对K和V进行下采样来降低FLOPs，帮助模型捕捉低频全局信息。
-
-
 
 ### 3、独特优势
 
@@ -4214,14 +4056,13 @@ CloFormer通过引入AttnConv（Attention Style Convolution Operator）来实现
 
 CloFormer专为移动设备设计，通过精心的模型架构设计和权重共享机制，实现了在保持轻量化的同时提高模型性能。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 from torch import nn
 from efficientnet_pytorch.model import MemoryEfficientSwish
+
 
 # 定义一个通过卷积和激活函数生成注意力图的模块
 class AttnMap(nn.Module):
@@ -4230,11 +4071,12 @@ class AttnMap(nn.Module):
         self.act_block = nn.Sequential(
             nn.Conv2d(dim, dim, 1, 1, 0),  # 1x1卷积用于调整通道数
             MemoryEfficientSwish(),  # 使用MemoryEfficientSwish作为激活函数
-            nn.Conv2d(dim, dim, 1, 1, 0)   # 再次1x1卷积
+            nn.Conv2d(dim, dim, 1, 1, 0)  # 再次1x1卷积
         )
 
     def forward(self, x):
         return self.act_block(x)
+
 
 # 定义高效注意力机制的主体模块
 class EfficientAttention(nn.Module):
@@ -4324,6 +4166,7 @@ class EfficientAttention(nn.Module):
             res.append(self.low_fre_attention(x, self.global_q, self.global_kv, self.avgpool))
         return self.proj_drop(self.proj(torch.cat(res, dim=1)))
 
+
 # 输入 N C HW,  输出 N C H W
 if __name__ == '__main__':
     block = EfficientAttention(64).cuda()
@@ -4332,23 +4175,21 @@ if __name__ == '__main__':
     print(output.shape)
 ```
 
-
-
 # 32、BiFormer模块
 
 论文《BiFormer: Vision Transformer with Bi-Level Routing Attention》
 
 ### 1、作用
-BiFormer旨在解决视觉Transformer在处理图像时的计算和内存效率问题。它通过引入双层路由注意力（Bi-Level Routing Attention, BRA），实现了动态的、基于内容的稀疏注意力机制，以更灵活、高效地分配计算资源。
 
-
+BiFormer旨在解决视觉Transformer在处理图像时的计算和内存效率问题。它通过引入双层路由注意力（Bi-Level Routing Attention,
+BRA），实现了动态的、基于内容的稀疏注意力机制，以更灵活、高效地分配计算资源。
 
 ### 2、机制
+
 BiFormer的核心是双层路由注意力（BRA），该机制包含两个主要步骤：区域到区域的路由和令牌到令牌的注意力。首先，通过构建一个区域级别的关联图并对其进行修剪，来确定哪些区域是相关的，并应该被进一步考虑。其次，在这些选定的区域中，应用细粒度的令牌到令牌注意力，以便每个查询仅与少数最相关的键-值对进行交互。这种方法允许BiFormer动态地关注图像中与特定查询最相关的部分，而不是在所有空间位置上计算成对的令牌交互，从而显著减少了计算复杂度和内存占用。
 
-
-
 ### 3、独特优势
+
 1、**计算效率**：
 
 BiFormer通过其双层路由注意力机制，实现了与传统全局注意力相比的显著计算和内存效率改进，具体体现在能够动态地仅对最相关的令牌子集进行计算。
@@ -4360,8 +4201,6 @@ BiFormer通过其双层路由注意力机制，实现了与传统全局注意力
 3、**高性能**：
 
 实验结果表明，BiFormer在图像分类、对象检测和语义分割等多个视觉任务上实现了优异的性能，尤其是在与模型大小和计算复杂度相当的情况下，其性能超越了现有的最先进方法。
-
-
 
 ### 4、代码
 
@@ -4493,7 +4332,7 @@ class BiLevelRoutingAttention(nn.Module):
 
         ################side_dwconv (i.e. LCE in ShuntedTransformer)###########
         self.lepe = nn.Conv2d(dim, dim, kernel_size=side_dwconv, stride=1, padding=side_dwconv // 2,
-                              groups=dim) if side_dwconv > 0 else \
+                              groups=dim) if side_dwconv > 0 else
             lambda x: torch.zeros_like(x)
 
         ################ global routing setting #################
@@ -4715,7 +4554,7 @@ class AttentionLePE(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
         self.lepe = nn.Conv2d(dim, dim, kernel_size=side_dwconv, stride=1, padding=side_dwconv // 2,
-                              groups=dim) if side_dwconv > 0 else \
+                              groups=dim) if side_dwconv > 0 else
             lambda x: torch.zeros_like(x)
 
     def forward(self, x):
@@ -4827,12 +4666,12 @@ def regional_routing_attention_torch(
     # TODO: is seperate gathering slower than fused one (our old version) ?
     # torch.gather does not support broadcasting, hence we do it manually
     bs, nhead, kv_nregion, kv_region_size, head_dim = key.size()
-    broadcasted_region_graph = region_graph.view(bs, nhead, q_nregion, topk, 1, 1). \
+    broadcasted_region_graph = region_graph.view(bs, nhead, q_nregion, topk, 1, 1).
         expand(-1, -1, -1, -1, kv_region_size, head_dim)
-    key_g = torch.gather(key.view(bs, nhead, 1, kv_nregion, kv_region_size, head_dim). \
+    key_g = torch.gather(key.view(bs, nhead, 1, kv_nregion, kv_region_size, head_dim).
                          expand(-1, -1, query.size(2), -1, -1, -1), dim=3,
                          index=broadcasted_region_graph)  # (bs, nhead, q_nregion, topk, kv_region_size, head_dim)
-    value_g = torch.gather(value.view(bs, nhead, 1, kv_nregion, kv_region_size, head_dim). \
+    value_g = torch.gather(value.view(bs, nhead, 1, kv_nregion, kv_region_size, head_dim).
                            expand(-1, -1, query.size(2), -1, -1, -1), dim=3,
                            index=broadcasted_region_graph)  # (bs, nhead, q_nregion, topk, kv_region_size, head_dim)
 
@@ -4883,7 +4722,7 @@ class BiLevelRoutingAttention_nchw(nn.Module):
 
         ################side_dwconv (i.e. LCE in Shunted Transformer)###########
         self.lepe = nn.Conv2d(dim, dim, kernel_size=side_dwconv, stride=1, padding=side_dwconv // 2,
-                              groups=dim) if side_dwconv > 0 else \
+                              groups=dim) if side_dwconv > 0 else
             lambda x: torch.zeros_like(x)
 
         ################ regional routing setting #################
@@ -4948,26 +4787,22 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 33、STVit模块
 
 论文《Vision Transformer with Super Token Sampling》
 
 ### 1、作用
+
 STVit旨在通过改进视觉Transformer的空间-时间效率，解决在处理视频和图像任务时常见的计算冗余问题。该模型尝试减少早期层次捕捉局部特征时的冗余计算，从而减少不必要的计算成本。
 
-
-
 ### 2、机制
-STVit引入了一种类似于图像处理中“超像素”的概念，称为“超级令牌”（super tokens），以减少自注意力计算中元素的数量，同时保留对全局关系建模的能力。该过程涉及从视觉令牌中采样超级令牌，对这些超级令牌执行自注意力操作，并将它们映射回原始令牌空间。
 
-
+STVit引入了一种类似于图像处理中“超像素”的概念，称为“超级令牌”（super
+tokens），以减少自注意力计算中元素的数量，同时保留对全局关系建模的能力。该过程涉及从视觉令牌中采样超级令牌，对这些超级令牌执行自注意力操作，并将它们映射回原始令牌空间。
 
 ### 3、独特优势
+
 STVit在不同的视觉任务中展示了强大的性能，包括图像分类、对象检测和分割，同时拥有更少的参数和较低的计算成本。例如，STVit在没有额外训练数据的情况下，在ImageNet-1K分类任务上达到了86.4%的顶级1准确率，且参数少于100M。
-
-
 
 ### 4、代码
 
@@ -5137,32 +4972,30 @@ class StokenAttention(nn.Module):
 #  输入 N C H W,  输出 N C H W
 if __name__ == '__main__':
     input = torch.randn(3, 64, 64, 64).cuda()
-    se = StokenAttention(64, stoken_size=[8,8]).cuda()
+    se = StokenAttention(64, stoken_size=[8, 8]).cuda()
     output = se(input)
     print(output.shape)
 
 ```
-
-
 
 # 34、EMO模块
 
 论文《Rethinking Mobile Block for Efficient Attention-based Models》
 
 ### 1、作用
-本文提出了一种有效的轻量级模型设计方法，旨在开发现代高效的轻量级模型，用于密集预测任务，同时平衡参数、FLOPs和性能。作者通过重新思考高效的Inverted Residual Block（IRB）和Transformer的有效组件，从统一的视角出发，扩展了基于CNN的IRB到基于Meta attention的模型，并抽象出了一种一次残差的Meta Mobile Block（MMB），用于轻量级模型设计。
 
-
+本文提出了一种有效的轻量级模型设计方法，旨在开发现代高效的轻量级模型，用于密集预测任务，同时平衡参数、FLOPs和性能。作者通过重新思考高效的Inverted
+Residual Block（IRB）和Transformer的有效组件，从统一的视角出发，扩展了基于CNN的IRB到基于Meta attention的模型，并抽象出了一种一次残差的Meta
+Mobile Block（MMB），用于轻量级模型设计。
 
 ### 2、机制
-本研究通过简单但有效的设计准则，提出了一种现代的Inverted Residual Mobile Block（iRMB），并使用iRMB构建了一个类似于ResNet的高效模型（EMO），仅用于下游任务。EMO通过将CNN的效率和Transformer的动态建模能力结合在iRMB中，有效地提高了模型性能。同时，EMO在不引入复杂结构的情况下，实现了与当前最先进的轻量级注意力模型的竞争性能。
 
-
+本研究通过简单但有效的设计准则，提出了一种现代的Inverted Residual Mobile
+Block（iRMB），并使用iRMB构建了一个类似于ResNet的高效模型（EMO），仅用于下游任务。EMO通过将CNN的效率和Transformer的动态建模能力结合在iRMB中，有效地提高了模型性能。同时，EMO在不引入复杂结构的情况下，实现了与当前最先进的轻量级注意力模型的竞争性能。
 
 ### 3、独特优势
+
 EMO在ImageNet-1K、COCO2017和ADE20K基准上的广泛实验展示了其优越性，例如，EMO-1M/2M/5M分别达到了71.5%、75.1%和78.4%的Top-1准确率，超过了同等级别的CNN-/Attention-based模型。同时，在参数效率和准确性之间取得了良好的平衡：在iPhone14上运行速度比EdgeNeXt快2.8-4.0倍。此外，EMO不使用复杂的操作，但仍然在多个视觉任务中获得了非常竞争性的结果，这证明了其作为轻量级注意力模型的有效性和实用性。
-
-
 
 ### 4、代码
 
@@ -5172,11 +5005,12 @@ import math
 from functools import partial
 
 import torch
-from timm.models.efficientnet_blocks import  SqueezeExcite as SE
+from timm.models.efficientnet_blocks import SqueezeExcite as SE
 from einops import rearrange, reduce
 
 from timm.models.layers.activations import *
 from timm.models.layers import DropPath
+
 inplace = True
 
 
@@ -5299,7 +5133,6 @@ class MSPatchEmb(nn.Module):
         return x
 
 
-
 class iRMB(nn.Module):
 
     def __init__(self, dim_in, dim_out, norm_in=True, has_skip=True, exp_ratio=1.0, norm_layer='bn_2d',
@@ -5388,6 +5221,7 @@ class iRMB(nn.Module):
         x = (shortcut + self.drop_path(x)) if self.has_skip else x
         return x
 
+
 #  输入 N C H W,  输出 N C H W
 if __name__ == '__main__':
     input = torch.randn(3, 64, 64, 64).cuda()
@@ -5395,8 +5229,6 @@ if __name__ == '__main__':
     output = model(input)
     print(output.shape)
 ```
-
-
 
 # 35、AFT模块
 
@@ -5406,13 +5238,9 @@ if __name__ == '__main__':
 
 **注意力自由变换器（AFT）**旨在通过去除传统Transformer中的点积自注意力机制，提供一种更高效的变换器模型。它特别适用于需要高计算效率和较低内存消耗的应用场景，如移动设备和边缘计算。
 
-
-
 ### 2、机制
 
 AFT通过直接对输入特征进行变换来实现序列间的关联，不再需要复杂的自注意力计算。它使用一种简单的基于位置的加权策略，通过这种方式，每个输出元素是输入元素的加权和，权重由元素的相对位置决定。这种方法极大地降低了模型的复杂性和运行时内存需求。
-
-
 
 ### 3、独特优势
 
@@ -5424,8 +5252,6 @@ AFT通过直接对输入特征进行变换来实现序列间的关联，不再�
 
 4、**资源占用低**：对于资源受限的环境，如移动设备和边缘计算设备，AFT提供了一种实用的解决方案，能够在保持较高性能的同时，降低资源消耗。
 
-
-
 ### 4、代码
 
 ```python
@@ -5433,6 +5259,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
+
 
 class AFT_FULL(nn.Module):
     # 初始化AFT_FULL模块
@@ -5486,6 +5313,7 @@ class AFT_FULL(nn.Module):
 
         return out
 
+
 # 示例使用
 if __name__ == '__main__':
     block = AFT_FULL(d_model=512, n=64).cuda()
@@ -5495,20 +5323,16 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 36、CrissCrossAttention模块
 
 论文《CROSSFORMER: A VERSATILE VISION TRANSFORMER HINGING ON CROSS-SCALE ATTENTION》
 
-
-
 ### 1、作用
+
 CrossFormer通过跨尺度的特征提取和注意力机制，有效处理计算机视觉任务。它克服了现有视觉Transformer无法在不同尺度间建立有效交互的限制，提升了模型对图像的理解能力。
 
-
-
 ### 2、机制
+
 1、**跨尺度嵌入层（CEL）**：
 
 通过不同尺度的内核采样图像补丁并将它们合并，为自注意力模块提供了跨尺度特征。
@@ -5521,16 +5345,13 @@ CrossFormer通过跨尺度的特征提取和注意力机制，有效处理计算
 
 提出了一种动态位置偏差模块，使得相对位置偏差可以应用于不同大小的图像，提高了模型的灵活性和适用性。
 
-
-
 ### 3、独特优势
+
 1、**跨尺度交互**：CrossFormer通过CEL和LSDA实现了特征在不同尺度间的有效交互，这对于处理具有不同尺寸对象的图像至关重要。
 
 2、**灵活性和适用性**：通过动态位置偏差模块，CrossFormer能够适应不同尺寸的输入图像，提高了模型在各种视觉任务上的适用性。
 
 3、**优异的性能**：广泛的实验表明，CrossFormer在图像分类、对象检测、实例分割和语义分割等任务上超越了其他最先进的视觉Transformer模型。
-
-
 
 ### 4、代码
 
@@ -5539,12 +5360,15 @@ import torch
 import torch.nn as nn
 from torch.nn import Softmax
 
+
 # 定义一个无限小的矩阵，用于在注意力矩阵中屏蔽特定位置
 def INF(B, H, W):
     return -torch.diag(torch.tensor(float("inf")).repeat(H), 0).unsqueeze(0).repeat(B * W, 1, 1)
 
+
 class CrissCrossAttention(nn.Module):
     """ Criss-Cross Attention Module"""
+
     def __init__(self, in_dim):
         super(CrissCrossAttention, self).__init__()
         # Q, K, V转换层
@@ -5561,8 +5385,10 @@ class CrissCrossAttention(nn.Module):
         m_batchsize, _, height, width = x.size()
         # 计算查询(Q)、键(K)、值(V)矩阵
         proj_query = self.query_conv(x)
-        proj_query_H = proj_query.permute(0, 3, 1, 2).contiguous().view(m_batchsize * width, -1, height).permute(0, 2, 1)
-        proj_query_W = proj_query.permute(0, 2, 1, 3).contiguous().view(m_batchsize * height, -1, width).permute(0, 2, 1)
+        proj_query_H = proj_query.permute(0, 3, 1, 2).contiguous().view(m_batchsize * width, -1, height).permute(0, 2,
+                                                                                                                 1)
+        proj_query_W = proj_query.permute(0, 2, 1, 3).contiguous().view(m_batchsize * height, -1, width).permute(0, 2,
+                                                                                                                 1)
 
         proj_key = self.key_conv(x)
         proj_key_H = proj_key.permute(0, 3, 1, 2).contiguous().view(m_batchsize * width, -1, height)
@@ -5573,7 +5399,12 @@ class CrissCrossAttention(nn.Module):
         proj_value_W = proj_value.permute(0, 2, 1, 3).contiguous().view(m_batchsize * height, -1, width)
 
         # 计算垂直和水平方向上的注意力分数，并应用无穷小掩码屏蔽自注意
-        energy_H = (torch.bmm(proj_query_H, proj_key_H) + self.INF(m_batchsize, height, width)).view(m_batchsize, width, height, height).permute(0, 2, 1, 3)
+        energy_H = (torch.bmm(proj_query_H, proj_key_H) + self.INF(m_batchsize, height, width)).view(m_batchsize, width,
+                                                                                                     height,
+                                                                                                     height).permute(0,
+                                                                                                                     2,
+                                                                                                                     1,
+                                                                                                                     3)
         energy_W = torch.bmm(proj_query_W, proj_key_W).view(m_batchsize, height, width, width)
 
         # 在垂直和水平方向上应用softmax归一化
@@ -5589,40 +5420,34 @@ class CrissCrossAttention(nn.Module):
 
         return self.gamma * (out_H + out_W) + x
 
+
 if __name__ == '__main__':
     block = CrissCrossAttention(64)
     input = torch.rand(1, 64, 64, 64)
     output = block(input)
-    print( output.shape)
+    print(output.shape)
 
 ```
 
-
-
 # 37、A2Atttention模块
-
-
 
 论文《A2-Nets: Double Attention Networks》
 
 ### 1、作用
+
 A2-Nets通过引入双重注意力机制，有效地捕获长距离特征依赖，提高图像和视频识别任务的性能。它允许卷积层直接感知整个时空空间的特征，而无需通过增加深度来扩大感受野，从而提高了模型的效率和性能。
 
-
-
 ### 2、机制
+
 A2-Nets设计了一个双重注意力模块（A2-Block），通过两步注意力机制聚合和分配全局特征。第一步通过第二阶注意力池化从整个空间中选择关键特征形成一个紧凑的集合。第二步则利用另一个注意力机制，根据每个位置的需求适应性地选择和分配关键特征，使得后续的卷积层能够有效地访问整个空间的特征。
 
-
-
 ### 3、独特优势
+
 1、通过捕获第二阶特征统计信息，可以捕获不能通过全局平均池化获得的复杂外观和运动相关性。
 
 2、第二个注意力操作使得模型可以从紧凑的特征集合中，根据每个位置的具体需求适应性地分配特征，比全面相关特征的方法更高效。
 
 3、A2-Nets可以被方便地插入到现有的深度神经网络中，对计算和内存资源的额外需求小，同时在多个标准图像和视频识别任务上显著提高性能。
-
-
 
 ### 4、代码
 
@@ -5638,10 +5463,10 @@ class DoubleAttention(nn.Module):
 
     def __init__(self, in_channels, c_m, c_n, reconstruct=True):
         super().__init__()
-        self.in_channels = in_channels# 输入通道数
-        self.reconstruct = reconstruct # 是否需要重构输出以匹配输入的维度
-        self.c_m = c_m # 第一个注意力机制的输出通道数
-        self.c_n = c_n # 第二个注意力机制的输出通道数
+        self.in_channels = in_channels  # 输入通道数
+        self.reconstruct = reconstruct  # 是否需要重构输出以匹配输入的维度
+        self.c_m = c_m  # 第一个注意力机制的输出通道数
+        self.c_n = c_n  # 第二个注意力机制的输出通道数
         # 定义三个1x1卷积层，用于生成A、B和V特征
         self.convA = nn.Conv2d(in_channels, c_m, 1)
         self.convB = nn.Conv2d(in_channels, c_n, 1)
@@ -5683,7 +5508,7 @@ class DoubleAttention(nn.Module):
         tmpZ = global_descriptors.matmul(attention_vectors)  # b,c_m,h*w
         tmpZ = tmpZ.view(b, self.c_m, h, w)  # b,c_m,h,w
         if self.reconstruct:
-            tmpZ = self.conv_reconstruct(tmpZ)# 如果需要，通过重构层调整输出通道数
+            tmpZ = self.conv_reconstruct(tmpZ)  # 如果需要，通过重构层调整输出通道数
 
         return tmpZ
 
@@ -5697,8 +5522,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 38、fcanet模块
 
 论文《FcaNet: Frequency Channel Attention Networks》
@@ -5706,8 +5529,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 FcaNet 通过采用频率通道注意力机制，显著提高了图像识别和分类任务的性能。该网络通过在频率域而不是传统的空间域对特征进行建模，使得网络能够更有效地捕捉到图像的细节和纹理信息。
-
-
 
 ### 2、机制
 
@@ -5723,8 +5544,6 @@ FcaNet 通过采用频率通道注意力机制，显著提高了图像识别和�
 
 最后，通过逆快速傅立叶变换（IFFT）将加权的频率特征映射回空间域，并通过卷积层进一步细化特征，最终输出用于分类的特征表示。
 
-
-
 ### 3、独特优势
 
 1、**提高了特征的区分力**：
@@ -5738,8 +5557,6 @@ FcaNet 通过采用频率通道注意力机制，显著提高了图像识别和�
 3、**灵活性和泛化能力**：
 
 FcaNet 不仅在图像分类任务上表现出色，还因其对特征的细粒度建模，展现了在跨领域任务（如目标检测和分割）中的泛化潜力。
-
-
 
 ### 4、代码
 
@@ -5837,7 +5654,7 @@ class MultiSpectralDCTLayer(nn.Module):
             height, width, mapper_x, mapper_y, channel)
 
     def forward(self, x):
-        assert len(x.shape) == 4, 'x must been 4 dimensions, but got ' + \
+        assert len(x.shape) == 4, 'x must been 4 dimensions, but got ' +
                                   str(len(x.shape))
         # n, c, h, w = x.shape
 
@@ -5875,8 +5692,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 39、Temporal_conv卷积模块
 
 论文《Connecting the Dots: Multivariate Time Series Forecasting with Graph Neural Networks》
@@ -5884,8 +5699,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 MTGNN框架旨在通过利用多图卷积网络来预测交通流量，通过考虑空间-时间相关性和交通网络中的动态变化，以提高交通预测的准确性。
-
-
 
 ### 2、机制
 
@@ -5905,8 +5718,6 @@ MTGNN通过构建多个图来模拟交通网络中的多种关系，包括空间
 
 MTGNN通过自适应图学习机制动态学习图结构，自动识别并强化重要的空间连接，提高模型对交通网络动态变化的适应性。
 
-
-
 ### 3、独特优势
 
 1、**复杂关系建模**：
@@ -5921,8 +5732,6 @@ MTGNN通过构建和学习多个图，能够综合考虑交通网络中的多重
 
 结合图卷积网络和时间卷积网络，MTGNN有效捕获空间特征和时间序列数据中的长期依赖性，优化了交通流量预测。
 
-
-
 ### 4、代码
 
 ```python
@@ -5931,6 +5740,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import math
+
 
 # 膨胀卷积模块，包含了膨胀卷积和一个前馈网络
 class dilated_inception(nn.Module):
@@ -5962,6 +5772,7 @@ class dilated_inception(nn.Module):
         x = self.out(x)  # 通过前馈网络调整时间序列的长度
         return x
 
+
 # 时间卷积网络，整合了滤波器和门控机制
 class temporal_conv(nn.Module):
     def __init__(self, cin, cout, dilation_factor, seq_len):
@@ -5978,6 +5789,7 @@ class temporal_conv(nn.Module):
         out = filter * gate  # 将滤波器分支和门控分支的输出相乘，实现门控机制
         return out
 
+
 if __name__ == '__main__':
     X = torch.randn(1, 32, 1, 24)  # 示例输入
     Model = temporal_conv(cin=32, cout=32, dilation_factor=1, seq_len=24)  # 实例化模型
@@ -5986,27 +5798,20 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 40、ScConv卷积模块
 
 论文《SCConv: Spatial and Channel Reconstruction Convolution for Feature Redundancy》
-
-
 
 ### 1、**作用**
 
 旨在通过空间和通道重构来减少卷积层中的冗余特征，从而降低计算成本并提高特征表达的代表性。SCConv包含两个单元：空间重构单元（SRU）和通道重构单元（CRU）。SRU通过分离和重建方法来抑制空间冗余，而CRU采用分割-转换-融合策略来减少通道冗余。此外，SCConv是一个即插即用的架构单元，可以直接替换各种卷积神经网络中的标准卷积。实验结果表明，嵌入SCConv的模型能够在显著降低复杂度和计算成本的同时，实现更好的性能。
 
-
-
 ### 2、**机制**
 
 1、**空间重构单元（SRU）**：通过分离操作将输入特征图分为信息丰富和信息较少的两部分，然后通过重建操作将这两部分的特征图结合起来，以增强特征表达并抑制空间维度上的冗余。
 
-2、**通道重构单元（CRU）**：采用分割-转换-融合策略，首先将特征图在通道维度上分割成两部分，一部分通过高效的卷积操作进行特征提取，另一部分则直接利用，最后将两部分的特征图通过自适应融合策略合并，以减少通道维度上的冗余并提升特征的代表性。
-
-
+2、**通道重构单元（CRU）**
+：采用分割-转换-融合策略，首先将特征图在通道维度上分割成两部分，一部分通过高效的卷积操作进行特征提取，另一部分则直接利用，最后将两部分的特征图通过自适应融合策略合并，以减少通道维度上的冗余并提升特征的代表性。
 
 ### 3、**独特优势**
 
@@ -6022,14 +5827,13 @@ SCConv可以作为一个模块直接嵌入到现有的卷积神经网络中，�
 
 实验表明，SCConv不仅减少了模型的复杂度和计算量，还在多个任务上取得了比原始模型更好的性能。
 
-
-
 ### 4、代码
 
 ```python
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+
 
 # GroupBatchnorm2d模块是对标准批量归一化的扩展，它将特征通道分组进行归一化。
 class GroupBatchnorm2d(nn.Module):
@@ -6053,6 +5857,7 @@ class GroupBatchnorm2d(nn.Module):
         x = (x - mean) / (std + self.eps)  # 归一化
         x = x.view(N, C, H, W)  # 恢复x的原始形状
         return x * self.weight + self.bias  # 应用权重和偏置
+
 
 # SRU模块用于抑制空间冗余。它通过分组归一化和一个门控机制实现。
 class SRU(nn.Module):
@@ -6088,6 +5893,7 @@ class SRU(nn.Module):
         x_11, x_12 = torch.split(x_1, x_1.size(1) // 2, dim=1)  # 将信息丰富的特征图分为两部分
         x_21, x_22 = torch.split(x_2, x_2.size(1) // 2, dim=1)  # 将信息较少的特征图分为两部分
         return torch.cat([x_11 + x_22, x_12 + x_21], dim=1)  # 通过特定方式合并特征图，增强特征表达
+
 
 # CRU模块用于处理通道冗余。它通过一个压缩-卷积-扩展策略来增强特征的代表性。
 class CRU(nn.Module):
@@ -6127,6 +5933,7 @@ class CRU(nn.Module):
         out1, out2 = torch.split(out, out.size(1) // 2, dim=1)  # 将合并后的特征图分为两部分
         return out1 + out2  # 将两部分的特征图相加，得到最终的输出
 
+
 # ScConv模块结合了SRU和CRU两个子模块，用于同时处理空间和通道冗余。
 class ScConv(nn.Module):
     def __init__(self,
@@ -6153,6 +5960,7 @@ class ScConv(nn.Module):
         x = self.CRU(x)  # 通过CRU处理通道冗余
         return x  # 返回处理后的特征图
 
+
 # 测试ScConv模块
 if __name__ == '__main__':
     x = torch.randn(1, 32, 16, 16)  # 创建一个随机的输入张量
@@ -6161,31 +5969,28 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 41、部分卷积模块
 
 论文《Run, Don’t Walk: Chasing Higher FLOPS for Faster Neural Networks》
 
-
-
 ### 1、**作用**：
 
-FasterNet旨在设计快速的神经网络，主要关注减少浮点操作(FLOPs)数量。然而，FLOPs数量的减少并不一定导致相似级别的延迟降低，主要是由于运算的浮点操作每秒(FLOPS)效率低下。为了实现更快的网络，FasterNet重新审视了流行的操作符，并证明了这种低FLOPS主要是由于运算符特别是深度卷积的频繁内存访问导致的。因此，FasterNet提出了一种新颖的部分卷积(PConv)，通过减少冗余计算和内存访问来更有效地提取空间特征。基于PConv，FasterNet是一个新的神经网络家族，提供了比其他网络更高的运行速度，而不会在各种视觉任务的准确性上妥协 。
-
-
+FasterNet旨在设计快速的神经网络，主要关注减少浮点操作(FLOPs)
+数量。然而，FLOPs数量的减少并不一定导致相似级别的延迟降低，主要是由于运算的浮点操作每秒(FLOPS)
+效率低下。为了实现更快的网络，FasterNet重新审视了流行的操作符，并证明了这种低FLOPS主要是由于运算符特别是深度卷积的频繁内存访问导致的。因此，FasterNet提出了一种新颖的部分卷积(
+PConv)
+，通过减少冗余计算和内存访问来更有效地提取空间特征。基于PConv，FasterNet是一个新的神经网络家族，提供了比其他网络更高的运行速度，而不会在各种视觉任务的准确性上妥协 。
 
 ### 2、**机制**
 
-部分卷积(PConv)的设计利用了特征图内部的冗余，系统地只在输入通道的一部分上应用常规卷积(Conv)，而保留其余通道不变。这种操作有两个主要优势：首先，与常规卷积相比，PConv具有更低的FLOPs；其次，与深度卷积/组卷积相比，PConv拥有更高的FLOPS，这意味着PConv更好地利用了设备上的计算能力。此外，为了充分有效地利用所有通道的信息，FasterNet在PConv之后进一步附加了逐点卷积(PWConv)。这两者的有效接受场类似于一个T形的卷积，更加关注中心位置，与常规卷积在补丁上的均匀处理相比，这提供了一个集中于中心位置的计算视角 。
-
-
+部分卷积(PConv)的设计利用了特征图内部的冗余，系统地只在输入通道的一部分上应用常规卷积(Conv)
+，而保留其余通道不变。这种操作有两个主要优势：首先，与常规卷积相比，PConv具有更低的FLOPs；其次，与深度卷积/组卷积相比，PConv拥有更高的FLOPS，这意味着PConv更好地利用了设备上的计算能力。此外，为了充分有效地利用所有通道的信息，FasterNet在PConv之后进一步附加了逐点卷积(
+PWConv)
+。这两者的有效接受场类似于一个T形的卷积，更加关注中心位置，与常规卷积在补丁上的均匀处理相比，这提供了一个集中于中心位置的计算视角 。
 
 ### 3、**独特优势**
 
 FasterNet通过PConv实现了显著的运行速度提升，同时保持了准确性。例如，在ImageNet-1k上，FasterNet的一个小型版本比MobileViT-XXS在GPU、CPU和ARM处理器上分别快2.8倍、3.3倍和2.4倍，同时准确率提高了2.9%。其大型版本FasterNet-L在GPU上的推理吞吐量比Swin-B高36%，在CPU上节省了37%的计算时间，同时实现了与Swin-B相当的83.5%的top-1准确率。这些成就展示了简单而有效的神经网络设计的可能性，不仅限于学术研究，也有潜力直接影响工业界和社区 。
-
-
 
 ### 4、代码
 
@@ -6196,6 +6001,7 @@ import inspect
 
 from torch import nn
 import torch
+
 
 class Partial_conv3(nn.Module):
     def __init__(self, dim, n_div, forward):
@@ -6239,6 +6045,7 @@ class Partial_conv3(nn.Module):
         x = torch.cat((x1, x2), 1)  # 将处理后的第一部分和未处理的第二部分拼接
         return x
 
+
 if __name__ == '__main__':
     block = Partial_conv3(64, 2, 'split_cat').cuda()  # 实例化模型
     input = torch.rand(1, 64, 64, 64).cuda()  # 创建输入张量
@@ -6247,8 +6054,6 @@ if __name__ == '__main__':
 
 ```
 
-
-
 # 42、空洞卷积模块
 
 论文《MULTI-SCALE CONTEXT AGGREGATION BY DILATED CONVOLUTIONS》由于它较多用于ASPP模块中。所以代码可以借鉴ASPP
@@ -6256,8 +6061,6 @@ if __name__ == '__main__':
 ### 1、作用
 
 膨胀卷积旨在通过扩大卷积核的感受野而不增加参数数量或计算量，提高模型对多尺度上下文信息的捕获能力。这在处理图像和语音信号时特别有效，能够在细节和全局信息间建立更好的平衡。
-
-
 
 ### 2、机制
 
@@ -6273,8 +6076,6 @@ if __name__ == '__main__':
 
 与增加卷积层或扩大卷积核尺寸相比，膨胀卷积在提升感受野的同时，保持了模型的参数数量和计算效率。
 
-
-
 ### 独特优势
 
 1、**增强的多尺度信息处理能力**：
@@ -6288,8 +6089,6 @@ if __name__ == '__main__':
 3、**广泛的应用场景**：
 
 膨胀卷积的这些优点使其在图像分割、语音识别、自然语言处理等多个领域中得到了广泛的应用。
-
-
 
 ### 4、代码
 
@@ -6372,31 +6171,22 @@ print(aspp(x).shape)  # 输出处理后的特征图维度
 
 ```
 
-
-
 # 43、可变性卷积模块
 
 论文《InternImage: Exploring Large-Scale Vision Foundation Models with Deformable Convolutions》
-
-
 
 ### 1、**作用**
 
 该文档介绍了一种基于卷积神经网络（CNNs）的大规模视觉基础模型，名为InternImage。与近年来取得巨大进展的大规模视觉变换器（ViTs）不同，基于CNN的大规模模型仍处于早期阶段。InternImage通过采用可变形卷积作为核心运算符，不仅具有执行下游任务（如检测和分割）所需的大有效接收场，而且还能够根据输入和任务信息进行自适应空间聚合。
 
-
-
 ### 2、**机制**
 
 InternImage利用可变形卷积（DCN），与传统CNN采用的大密集核心运算符不同，它是一种动态稀疏卷积，采用通常的3x3窗口大小。这使得模型能够从给定数据中动态学习合适的接收字段（可为长程或短程），并根据输入数据自适应调整采样偏移和调制标量，类似于ViTs，减少了常规卷积的过度归纳偏置。
 
-
-
 ### 3、**独特优势**
 
-InternImage通过上述设计，可以高效地扩展到大规模参数，并从大规模训练数据中学习更强大的表示，从而在包括ImageNet、COCO和ADE20K在内的具有挑战性的基准测试中证明了模型的有效性。值得一提的是，InternImage-H在COCO test-dev上创造了新纪录，达到了65.4 mAP，在ADE20K上达到了62.9 mIoU，超越了当前领先的CNN和ViTs。
-
-
+InternImage通过上述设计，可以高效地扩展到大规模参数，并从大规模训练数据中学习更强大的表示，从而在包括ImageNet、COCO和ADE20K在内的具有挑战性的基准测试中证明了模型的有效性。值得一提的是，InternImage-H在COCO
+test-dev上创造了新纪录，达到了65.4 mAP，在ADE20K上达到了62.9 mIoU，超越了当前领先的CNN和ViTs。
 
 ### 4、代码
 
@@ -6575,9 +6365,9 @@ class DeformConv2d(nn.Module):
 
         # 双线性插值的最后计算
         # (b, c, h, w, kernel_size*kernel_size)
-        x_offset = g_lt.unsqueeze(dim=1) * x_q_lt + \
-                   g_rb.unsqueeze(dim=1) * x_q_rb + \
-                   g_lb.unsqueeze(dim=1) * x_q_lb + \
+        x_offset = g_lt.unsqueeze(dim=1) * x_q_lt +
+                   g_rb.unsqueeze(dim=1) * x_q_rb +
+                   g_lb.unsqueeze(dim=1) * x_q_lb +
                    g_rt.unsqueeze(dim=1) * x_q_rt
 
         # modulation
@@ -6599,18 +6389,16 @@ class DeformConv2d(nn.Module):
 
 ```
 
-
-
 # 44、蛇形卷积模块
 
 论文《Dynamic Snake Convolution based on Topological Geometric Constraints for Tubular Structure Segmentation》
 
 ### 1、作用
+
 本文提出了一种新的框架DSCNet，旨在精确分割拓扑管状结构，如血管和道路。这些结构在临床应用和遥感应用中至关重要，准确的分割对于下游任务的精确性和效率至关重要。
 
-
-
 ### 2、机制
+
 1、**动态蛇形卷积（DSConv）**：
 
 通过适应性聚焦于细长和曲折的局部结构，精确捕获管状结构的特征。不同于可变形卷积，DSConv考虑管状结构的蛇形形态，并通过约束补充自由学习过程，专注于管状结构的感知。
@@ -6623,9 +6411,8 @@ class DeformConv2d(nn.Module):
 
 基于持续同调（Persistent Homology, PH）提出一种连续性约束损失函数，以约束分割的拓扑连续性，更好地维持管状结构的完整性。
 
-
-
 ### 独特优势
+
 1、**精确的局部特征捕获**：
 
 DSConv能够适应性地聚焦于细长和曲折的局部特征，与可变形卷积相比，在保持目标形态的同时增强了对管状结构的感知能力。
@@ -6637,8 +6424,6 @@ DSConv能够适应性地聚焦于细长和曲折的局部特征，与可变形�
 3、**拓扑连续性的保持**：
 
 利用TCLoss在拓扑角度对分割连续性进行约束，有效地引导模型关注于可能断裂的区域，提升了管状结构分割的连续性和完整性。
-
-
 
 ### 4、代码
 
@@ -7021,31 +6806,28 @@ if __name__ == '__main__':
     print(out.shape)
 ```
 
-
-
 # 45、深度可分离卷积模块
 
 论文《DeepLab V3》
 
-
-
 ### 1、作用
+
 `DepthwiseSeparableConv`模块主要用于执行深度可分离卷积操作，它是一种高效的卷积方法，广泛应用于减少模型参数数量、计算成本以及提高运行效率等场景，特别是在移动和嵌入式设备上的深度学习应用中。
 
-
-
 ### 2、机制
+
 1、**深度卷积层（Depthwise Convolution）**：
 
-对输入的每个通道分别应用卷积操作。这个层使用的是`nn.Conv2d`，其中`groups`参数等于输入通道数，实现了深度卷积。这一层之后紧接着一个批归一化层（`nn.BatchNorm2d`）和一个`LeakyReLU`激活函数。
+对输入的每个通道分别应用卷积操作。这个层使用的是`nn.Conv2d`，其中`groups`
+参数等于输入通道数，实现了深度卷积。这一层之后紧接着一个批归一化层（`nn.BatchNorm2d`）和一个`LeakyReLU`激活函数。
 
 2、**逐点卷积层（Pointwise Convolution）**：
 
-逐点卷积（也称作1x1卷积）的目的是组合由深度卷积产生的特征，将它们映射到新的空间中（更改特征图的深度）。与深度卷积层类似，逐点卷积层也包括批归一化和`LeakyReLU`激活函数。
-
-
+逐点卷积（也称作1x1卷积）的目的是组合由深度卷积产生的特征，将它们映射到新的空间中（更改特征图的深度）。与深度卷积层类似，逐点卷积层也包括批归一化和`LeakyReLU`
+激活函数。
 
 ### 3、独特优势
+
 1、**参数效率**：
 
 通过分离卷积操作为深度和逐点两个独立的步骤，深度可分离卷积显著减少了模型参数的数量，这使得模型更加轻量，便于在资源有限的设备上部署。
@@ -7057,8 +6839,6 @@ if __name__ == '__main__':
 3、**灵活性和扩展性**：
 
 `DepthwiseSeparableConv`类的设计提供了灵活性，可以根据具体任务调整内部层的配置（例如，卷积核大小、步长和填充），以适应不同的输入特征和需求，从而提高了模型的适用范围和扩展性。
-
-
 
 ### 4、代码
 
@@ -7085,7 +6865,6 @@ class DepthwiseSeparableConv(nn.Module):
         x = self.depthwise(x)
         x = self.pointwise(x)
         return x
-
 ```
 
 
