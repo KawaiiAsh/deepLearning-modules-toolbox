@@ -1,3 +1,5 @@
+![](img.png)
+
 # 1、SE Net模块
 
 论文《Squeeze-and-Excitation Networks》
