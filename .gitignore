@@ -1,0 +1,37 @@
+# 忽略所有的 .class 文件
+*.class
+
+# 忽略特定的文件或目录
+/config.ini
+/logs/
+
+# 忽略所有的 .log 文件，但允许 logs/ 目录下的 .log 文件
+logs/*.log
+!logs/important.log
+
+# 忽略所有的 .tmp 文件
+*.tmp
+
+# 忽略所有的 .bak 和 .swp 文件
+*~
+*.bak
+*.swp
+
+# 忽略所有的 .DS_Store 文件（macOS系统生成的隐藏文件）
+.DS_Store
+
+# 忽略所有的 .idea/ 目录（PyCharm或IntelliJ IDEA生成的项目配置文件）
+.idea/
+
+# 忽略所有的 __pycache__/ 目录（Python生成的缓存文件）
+__pycache__/
+
+# 忽略所有的 .vscode/ 目录（Visual Studio Code生成的项目配置文件）
+.vscode/
+
+# 忽略所有的 node_modules/ 目录（Node.js项目生成的依赖库）
+node_modules/
+
+# 忽略所有的 *.log 文件，但允许 foo.log 文件
+*.log
+!foo.log
